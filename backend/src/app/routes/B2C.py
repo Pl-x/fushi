@@ -33,7 +33,8 @@ def initiate_transfer():
         "amount": 50000,  // Amount in kobo
         "currency": "NGN",
         "reason": "Payout for services",
-        "reference": "unique-ref-123"  // Optional
+        "reference": "unique-ref-123",  // Optional
+        "idempotency_key": "unique-key-123"  // Optional: for preventing duplicate transfers
     }
     """
     try:
@@ -50,6 +51,20 @@ def initiate_transfer():
         
         if not paystack:
             return jsonify({'status': 'error', 'message': 'Paystack not configured'}), 500
+        
+        # Check for idempotency key
+        idempotency_key = data.get('idempotency_key') or request.headers.get('Idempotency-Key')
+        
+        if idempotency_key:
+            # Check if we already processed this request
+            existing_transfer = Transfer.query.filter_by(idempotency_key=idempotency_key).first()
+            if existing_transfer:
+                logger.info(f"Idempotent transfer request detected: {idempotency_key}")
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Transfer already initiated (idempotent)',
+                    'data': existing_transfer.to_dict()
+                }), 200
         
         # Create or get transfer recipient
         recipient_type = data['type']
@@ -111,7 +126,8 @@ def initiate_transfer():
                 reason=reason,
                 reference=reference,
                 status='PENDING',
-                transfer_code=transfer_response['data'].get('transfer_code')
+                transfer_code=transfer_response['data'].get('transfer_code'),
+                idempotency_key=idempotency_key
             )
             
             db.session.add(transfer)
@@ -196,7 +212,8 @@ def process_refund():
         "amount": 10000,  // Optional, null for full refund
         "currency": "NGN",
         "customer_note": "Refund reason",
-        "merchant_note": "Internal note"
+        "merchant_note": "Internal note",
+        "idempotency_key": "unique-key-123"  // Optional: for preventing duplicate refunds
     }
     """
     try:
@@ -211,6 +228,9 @@ def process_refund():
         
         if not paystack:
             return jsonify({'status': 'error', 'message': 'Paystack not configured'}), 500
+        
+        # Check for idempotency key
+        idempotency_key = data.get('idempotency_key') or request.headers.get('Idempotency-Key')
         
         transaction_reference = data['transaction_reference']
         
@@ -230,6 +250,19 @@ def process_refund():
                 'status': 'error',
                 'message': 'Can only refund successful transactions'
             }), 400
+        
+        # Check if idempotency key already used for this payment
+        if idempotency_key:
+            existing_refund = Refund.query.filter_by(
+                idempotency_key=idempotency_key
+            ).first()
+            if existing_refund:
+                logger.info(f"Idempotent refund request detected: {idempotency_key}")
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Refund already processed (idempotent)',
+                    'data': existing_refund.to_dict()
+                }), 200
         
         # Check if already refunded
         existing_refund = Refund.query.filter_by(
@@ -267,7 +300,8 @@ def process_refund():
                 merchant_note=merchant_note,
                 customer_note=customer_note,
                 status='PROCESSING',
-                refund_reference=refund_response['data'].get('transaction', {}).get('reference')
+                refund_reference=refund_response['data'].get('transaction', {}).get('reference'),
+                idempotency_key=idempotency_key
             )
             
             db.session.add(refund)

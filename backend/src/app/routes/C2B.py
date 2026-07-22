@@ -35,7 +35,8 @@ def initialize_payment():
         "metadata": {
             "order_id": "123"
         },
-        "channels": ["mobile_money"]  // For M-Pesa, use mobile_money channel
+        "channels": ["mobile_money"],  // For M-Pesa, use mobile_money channel
+        "idempotency_key": "unique-key-123"  // Optional: for preventing duplicate payments
     }
     """
     try:
@@ -50,6 +51,26 @@ def initialize_payment():
         
         if not paystack:
             return jsonify({'status': 'error', 'message': 'Paystack not configured'}), 500
+        
+        # Check for idempotency key
+        idempotency_key = data.get('idempotency_key') or request.headers.get('Idempotency-Key')
+        
+        if idempotency_key:
+            # Check if we already processed this request
+            existing_payment = Payment.query.filter_by(idempotency_key=idempotency_key).first()
+            if existing_payment:
+                logger.info(f"Idempotent request detected: {idempotency_key}")
+                return jsonify({
+                    'status': 'success',
+                    'message': 'Payment already initialized (idempotent)',
+                    'data': {
+                        'authorization_url': f"https://checkout.paystack.com/{existing_payment.paystack_access_code}",
+                        'access_code': existing_payment.paystack_access_code,
+                        'reference': existing_payment.paystack_reference,
+                        'payment_id': existing_payment.id,
+                        'idempotent': True
+                    }
+                }), 200
         
         # Prepare payment data for Kenya M-Pesa
         email = data['email']
@@ -66,6 +87,10 @@ def initialize_payment():
         # Add phone number to metadata if provided
         if phone_number:
             metadata['phone_number'] = phone_number
+        
+        # Add idempotency key to metadata
+        if idempotency_key:
+            metadata['idempotency_key'] = idempotency_key
         
         # Initialize transaction with Paystack
         response = paystack.transaction.initialize(
@@ -91,7 +116,8 @@ def initialize_payment():
                 transaction_desc=data.get('description', 'M-Pesa Payment via Paystack'),
                 paystack_reference=response['data']['reference'],
                 paystack_access_code=response['data']['access_code'],
-                channel='mobile_money'  # M-Pesa channel
+                channel='mobile_money',  # M-Pesa channel
+                idempotency_key=idempotency_key
             )
             
             db.session.add(payment)
@@ -333,7 +359,8 @@ def initialize_mpesa():
         "phone_number": "254712345678",  // M-Pesa phone number
         "email": "customer@email.com",   // Required by Paystack
         "amount": 100,  // Amount in KES (will be converted to cents)
-        "description": "Payment for order #123"
+        "description": "Payment for order #123",
+        "idempotency_key": "unique-key-123"  // Optional: for preventing duplicate payments
     }
     """
     try:
@@ -350,6 +377,29 @@ def initialize_mpesa():
         
         if not paystack:
             return jsonify({'status': 'error', 'message': 'Paystack not configured'}), 500
+        
+        # Check for idempotency key
+        idempotency_key = data.get('idempotency_key') or request.headers.get('Idempotency-Key')
+        
+        if idempotency_key:
+            # Check if we already processed this request
+            existing_payment = Payment.query.filter_by(idempotency_key=idempotency_key).first()
+            if existing_payment:
+                logger.info(f"Idempotent M-Pesa request detected: {idempotency_key}")
+                return jsonify({
+                    'status': 'success',
+                    'message': 'M-Pesa payment already initialized (idempotent)',
+                    'data': {
+                        'authorization_url': f"https://checkout.paystack.com/{existing_payment.paystack_access_code}",
+                        'access_code': existing_payment.paystack_access_code,
+                        'reference': existing_payment.paystack_reference,
+                        'payment_id': existing_payment.id,
+                        'amount_kes': existing_payment.amount / 100,
+                        'phone_number': existing_payment.phone_number,
+                        'instructions': 'Customer will receive M-Pesa prompt on their phone',
+                        'idempotent': True
+                    }
+                }), 200
         
         # Validate phone number format (254XXXXXXXXX)
         phone_number = data['phone_number']
@@ -371,6 +421,9 @@ def initialize_mpesa():
             'payment_method': 'mpesa',
             'description': description
         }
+        
+        if idempotency_key:
+            metadata['idempotency_key'] = idempotency_key
         
         # Initialize transaction with Paystack - M-Pesa channel
         response = paystack.transaction.initialize(
@@ -395,7 +448,8 @@ def initialize_mpesa():
                 transaction_desc=description,
                 paystack_reference=response['data']['reference'],
                 paystack_access_code=response['data']['access_code'],
-                channel='mobile_money'
+                channel='mobile_money',
+                idempotency_key=idempotency_key
             )
             
             db.session.add(payment)

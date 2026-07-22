@@ -18,6 +18,9 @@ class Payment(db.Model):
     account_reference = db.Column(db.String(100), nullable=False)
     transaction_desc = db.Column(db.String(255), nullable=False)
     
+    # Idempotency key for preventing duplicate transactions
+    idempotency_key = db.Column(db.String(100), unique=True, index=True, nullable=True)
+    
     # M-Pesa Specific Fields
     result_code = db.Column(db.String(20), nullable=True)
     result_desc = db.Column(db.String(255), nullable=True)
@@ -56,7 +59,8 @@ class Payment(db.Model):
             'receipt_number': self.receipt_number,
             'transaction_date': self.transaction_date.isoformat() if self.transaction_date else None,
             'created_at': self.created_at.isoformat(),
-            'channel': self.channel
+            'channel': self.channel,
+            'idempotency_key': self.idempotency_key
         }
 
 
@@ -170,6 +174,9 @@ class Transfer(db.Model):
     __tablename__ = 'transfers'
     id = db.Column(db.Integer, primary_key=True)
     
+    # Idempotency key for preventing duplicate transfers
+    idempotency_key = db.Column(db.String(100), unique=True, index=True, nullable=True)
+    
     # Recipient details
     recipient_type = db.Column(db.String(20), nullable=False)  # nuban, mobile_money, basa, etc.
     recipient_code = db.Column(db.String(100), nullable=True)  # Paystack recipient code
@@ -209,7 +216,8 @@ class Transfer(db.Model):
             'status': self.status,
             'transfer_code': self.transfer_code,
             'created_at': self.created_at.isoformat(),
-            'completed_at': self.completed_at.isoformat() if self.completed_at else None
+            'completed_at': self.completed_at.isoformat() if self.completed_at else None,
+            'idempotency_key': self.idempotency_key
         }
 
 
@@ -217,6 +225,9 @@ class Refund(db.Model):
     '''Database model for refunds.'''
     __tablename__ = 'refunds'
     id = db.Column(db.Integer, primary_key=True)
+    
+    # Idempotency key for preventing duplicate refunds
+    idempotency_key = db.Column(db.String(100), unique=True, index=True, nullable=True)
     
     # Reference to original payment
     payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), nullable=False)
@@ -256,7 +267,8 @@ class Refund(db.Model):
             'status': self.status,
             'refund_reference': self.refund_reference,
             'created_at': self.created_at.isoformat(),
-            'processed_at': self.processed_at.isoformat() if self.processed_at else None
+            'processed_at': self.processed_at.isoformat() if self.processed_at else None,
+            'idempotency_key': self.idempotency_key
         }
 
 

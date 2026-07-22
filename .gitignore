@@ -1,0 +1,470 @@
+# ====================================
+# projectX - Global .gitignore
+# ====================================
+
+# =====================================
+# Environment Variables & Secrets
+# =====================================
+.env
+.env.*
+.env.local
+.env.*.local
+!.env.example
+
+# API Keys & Secrets
+*secret*
+*SECRET*
+*.key
+*.pem
+*.p12
+*.pfx
+credentials.json
+service-account.json
+
+# =====================================
+# Python
+# =====================================
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual Environments
+venv/
+.venv/
+ENV/
+env/
+virtualenv/
+.python-version
+
+# PyInstaller
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Flask
+instance/
+.webassets-cache
+flask_session/
+
+# Django
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Scrapy
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Jupyter Notebook
+.ipynb_checkpoints
+
+# IPython
+profile_default/
+ipython_config.py
+
+# Celery
+celerybeat-schedule
+celerybeat.pid
+
+# SageMath parsed files
+*.sage.py
+
+# Spyder project settings
+.spyderproject
+.spyproject
+
+# Rope project settings
+.ropeproject
+
+# mypy
+.mypy_cache/
+.dmypy.json
+dmypy.json
+
+# Pyre type checker
+.pyre/
+
+# pytype static type analyzer
+.pytype/
+
+# Cython debug symbols
+cython_debug/
+
+# =====================================
+# Database
+# =====================================
+*.db
+*.sqlite
+*.sqlite3
+*.db-journal
+*.rdb
+dump.rdb
+
+# PostgreSQL
+*.pgsql
+*.psql
+
+# MySQL
+*.sql
+*.mysql
+
+# Database dumps
+*.dump
+database_backup/
+db_backups/
+
+# =====================================
+# Node.js / JavaScript / Frontend
+# =====================================
+# Dependencies
+node_modules/
+jspm_packages/
+bower_components/
+
+# Production builds
+/dist
+/build
+/.next
+/out
+
+# Testing
+coverage/
+.nyc_output
+
+# Misc
+.DS_Store
+.env.test.local
+.env.production.local
+
+# npm
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
+
+# Package manager lock files (optional - uncomment if needed)
+# package-lock.json
+# yarn.lock
+# pnpm-lock.yaml
+
+# Parcel cache
+.cache
+.parcel-cache
+
+# Next.js
+.next/
+out/
+
+# Nuxt.js
+.nuxt
+dist
+
+# Gatsby
+.cache/
+public
+
+# Vuepress
+.vuepress/dist
+
+# Serverless
+.serverless/
+
+# FuseBox
+.fusebox/
+
+# DynamoDB Local
+.dynamodb/
+
+# Webpack
+.webpack/
+
+# =====================================
+# IDEs and Editors
+# =====================================
+# VSCode
+.vscode/
+*.code-workspace
+.history/
+
+# IntelliJ IDEA / PyCharm / WebStorm
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+[._]*.s[a-v][a-z]
+[._]*.sw[a-p]
+[._]s[a-rt-v][a-z]
+[._]ss[a-gi-z]
+[._]sw[a-p]
+Session.vim
+Sessionx.vim
+.netrwhist
+*~
+tags
+[._]*.un~
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Eclipse
+.metadata
+bin/
+tmp/
+*.tmp
+*.bak
+*.swp
+*~.nib
+local.properties
+.settings/
+.loadpath
+.recommenders
+
+# NetBeans
+/nbproject/private/
+/nbbuild/
+/dist/
+/nbdist/
+/.nb-gradle/
+
+# =====================================
+# Operating Systems
+# =====================================
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.stackdump
+[Dd]esktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.directory
+.Trash-*
+.nfs*
+
+# =====================================
+# Logs
+# =====================================
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+lerna-debug.log*
+.pnpm-debug.log*
+combined.log
+error.log
+access.log
+debug.log
+
+# =====================================
+# Temporary Files
+# =====================================
+tmp/
+temp/
+*.tmp
+*.temp
+*.bak
+*.backup
+*.old
+*.orig
+
+# =====================================
+# Testing
+# =====================================
+.pytest_cache/
+.coverage
+htmlcov/
+test-results/
+coverage/
+*.cover
+.nyc_output/
+
+# =====================================
+# Build Artifacts
+# =====================================
+dist/
+build/
+*.pyc
+*.pyo
+*.egg-info/
+.eggs/
+
+# =====================================
+# Documentation
+# =====================================
+docs/_build/
+site/
+.docusaurus/
+
+# =====================================
+# Cloud & Deployment
+# =====================================
+# Terraform
+.terraform/
+*.tfstate
+*.tfstate.*
+.terraform.lock.hcl
+
+# AWS
+.aws/
+*.pem
+
+# Docker
+.dockerignore
+
+# Kubernetes
+*.kubeconfig
+
+# =====================================
+# Data Files
+# =====================================
+# Large data files
+data/
+datasets/
+*.csv
+*.tsv
+*.xlsx
+*.xls
+!example_data/
+
+# Media files (uncomment if needed)
+# *.jpg
+# *.jpeg
+# *.png
+# *.gif
+# *.mp4
+# *.mp3
+
+# =====================================
+# Redis
+# =====================================
+dump.rdb
+appendonly.aof
+
+# =====================================
+# Migrations (optional)
+# =====================================
+# Uncomment to ignore migration files
+# migrations/versions/*.py
+# !migrations/versions/__init__.py
+
+# =====================================
+# Custom
+# =====================================
+# Add any project-specific files here
+*.local
+.private/
+secrets/
+private_keys/
+
+# Test data
+test_uploads/
+test_files/
+
+# Development
+.dev/
+scratch/
+playground/
+
+# CI/CD
+.circleci/
+.travis.yml
+.gitlab-ci.yml
+
+# =====================================
+# Keep These Files (Examples)
+# =====================================
+!.gitkeep
+!.env.example
+!README.md
+!LICENSE
+!CONTRIBUTING.md
