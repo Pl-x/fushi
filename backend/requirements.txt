@@ -1,0 +1,27 @@
+# Flask and Extensions
+flask>=3.0.0
+flask-sqlalchemy>=3.1.1
+flask-migrate>=4.0.5
+flask-cors>=4.0.0
+flask-limiter>=3.5.0
+
+# Payment Processing
+pypaystack2>=1.0.0
+
+# Database
+psycopg2-binary>=2.9.9
+sqlalchemy>=2.0.0
+
+# Authentication & Security
+pyjwt>=2.8.0
+bcrypt>=4.1.2
+
+# Environment & Configuration
+python-dotenv>=1.0.0
+
+# Utilities
+redis>=5.0.0
+requests>=2.31.0
+
+# Optional: Production Server
+gunicorn>=21.2.0
