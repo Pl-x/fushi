@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pink — Welcome</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pink: {
+                50: '#ecfdf5',
+                100: '#d1fae5',
+                300: '#6ee7b7',
+                500: '#059669',
+                600: '#059669',
+                700: '#047857',
+              },
+            },
+            boxShadow: {
+              app: '0 2px 4px rgba(0,0,0,0.05)',
+            },
+          },
+        },
+      };
+    </script>
+    <style>
+      body { font-family: Inter, Arial, sans-serif; background: #f6f8f7; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-[#f6f8f7] px-4 py-8 text-slate-900">
+    <div class="mx-auto flex min-h-[calc(100vh-4rem)] max-w-md flex-col justify-center">
+      <div class="rounded-[28px] border border-gray-200 bg-white p-5 shadow-app">
+        <div class="mb-6 text-center">
+          <span class="inline-flex rounded-full bg-pink-50 px-3 py-1 text-[11px] font-semibold text-pink-700">Available in Kenya, Uganda, Tanzania, Rwanda, Burundi & Ethiopia</span>
+        </div>
+
+        <div class="mb-4 flex items-center justify-center gap-2">
+          <span class="text-2xl">🇰🇪</span>
+          <div>
+            <h1 class="text-3xl font-bold tracking-[-0.02em] text-slate-900">Karibu!</h1>
+            <p class="text-sm font-medium text-gray-500">Welcome, Reviewer 👋</p>
+          </div>
+        </div>
+
+        <p class="mb-5 text-center text-sm leading-6 text-gray-600">
+          You're in Kenya — exactly where we want you. Start reviewing US hotels and get paid in US dollars via M-Pesa.
+        </p>
+
+        <div class="mb-5 flex flex-wrap gap-2" aria-label="Select your country" role="group">
+          <button class="country-chip rounded-full bg-pink-600 px-4 py-2 text-xs font-semibold text-white" aria-pressed="true">Kenya</button>
+          <button class="country-chip rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600" aria-pressed="false">Uganda</button>
+          <button class="country-chip rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600" aria-pressed="false">Tanzania</button>
+          <button class="country-chip rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600" aria-pressed="false">Rwanda</button>
+        </div>
+
+        <a href="/signup" class="block w-full rounded-xl bg-pink-600 px-4 py-3 text-center text-sm font-semibold text-white shadow-sm">Create reviewer account →</a>
+        <p class="mt-3 text-center text-xs text-gray-500">Already reviewing? <a class="font-semibold text-pink-700" href="/signin">Sign in</a></p>
+
+        <div class="mt-5 grid grid-cols-3 gap-2">
+          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-3 text-center">
+            <p class="text-sm font-bold text-slate-900">$14</p>
+            <p class="mt-1 text-[11px] text-gray-500">Per review</p>
+          </div>
+          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-3 text-center">
+            <p class="text-sm font-bold text-slate-900">500+</p>
+            <p class="mt-1 text-[11px] text-gray-500">Reviewers earning</p>
+          </div>
+          <div class="rounded-2xl border border-gray-200 bg-gray-50 p-3 text-center">
+            <p class="text-sm font-bold text-slate-900">M-Pesa</p>
+            <p class="mt-1 text-[11px] text-gray-500">Easy payout</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <script>
+      document.querySelectorAll('.country-chip').forEach((chip) => {
+        chip.addEventListener('click', () => {
+          document.querySelectorAll('.country-chip').forEach((item) => {
+            item.className = 'country-chip rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600';
+            item.setAttribute('aria-pressed', 'false');
+          });
+          chip.className = 'country-chip rounded-full bg-pink-600 px-4 py-2 text-xs font-semibold text-white';
+          chip.setAttribute('aria-pressed', 'true');
+        });
+      });
+    </script>
+  </body>
+</html>

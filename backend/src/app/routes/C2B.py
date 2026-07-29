@@ -4,8 +4,7 @@ C2B (Customer to Business) routes for receiving payments from customers
 import os
 import logging
 from flask import request, jsonify, Blueprint
-from pypaystack2 import Paystack
-from pypaystack2.errors import InvalidDataError, UnwantedDataError
+from ..paystack_client import Paystack, InvalidDataError, UnwantedDataError
 from ..extensions import db
 from ..models import Payment
 import datetime
@@ -40,7 +39,7 @@ def initialize_payment():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         if not data.get('email'):
@@ -163,7 +162,7 @@ def charge_authorization():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         required_fields = ['email', 'amount', 'authorization_code']
@@ -239,6 +238,13 @@ def verify_payment(reference):
     Verify a C2B payment
     """
     try:
+        payment = Payment.query.filter_by(paystack_reference=reference).first()
+        if not payment:
+            return jsonify({
+                'status': 'error',
+                'message': 'Payment record not found'
+            }), 404
+
         if not paystack:
             return jsonify({'status': 'error', 'message': 'Paystack not configured'}), 500
         
@@ -246,34 +252,28 @@ def verify_payment(reference):
         response = paystack.transaction.verify(reference=reference)
         
         if response['status']:
-            # Update payment record in database
-            payment = Payment.query.filter_by(paystack_reference=reference).first()
-            
-            if payment:
-                if response['data']['status'] == 'success':
-                    payment.status = 'SUCCESS'
-                    payment.channel = response['data'].get('channel')
-                    payment.receipt_number = str(response['data'].get('id'))
-                    payment.transaction_date = datetime.datetime.utcnow()
-                    payment.authorization_code = response['data'].get('authorization', {}).get('authorization_code')
-                    payment.customer_code = response['data'].get('customer', {}).get('customer_code')
-                else:
-                    payment.status = 'FAILED'
-                
+            if response['data']['status'] != 'success':
+                payment.status = 'FAILED'
                 db.session.commit()
-                
-                logger.info(f"C2B payment verified: {reference} - Status: {payment.status}")
-                
-                return jsonify({
-                    'status': 'success',
-                    'message': 'Payment verified',
-                    'data': payment.to_dict()
-                }), 200
-            else:
                 return jsonify({
                     'status': 'error',
-                    'message': 'Payment record not found'
-                }), 404
+                    'message': 'Payment verification failed',
+                    'data': payment.to_dict()
+                }), 400
+
+            payment.status = 'SUCCESS'
+            payment.channel = response['data'].get('channel')
+            payment.receipt_number = str(response['data'].get('id'))
+            payment.transaction_date = datetime.datetime.utcnow()
+            payment.authorization_code = response['data'].get('authorization', {}).get('authorization_code')
+            payment.customer_code = response['data'].get('customer', {}).get('customer_code')
+            db.session.commit()
+            logger.info(f"C2B payment verified: {reference} - Status: {payment.status}")
+            return jsonify({
+                'status': 'success',
+                'message': 'Payment verified',
+                'data': payment.to_dict()
+            }), 200
         else:
             return jsonify({
                 'status': 'error',
@@ -364,7 +364,7 @@ def initialize_mpesa():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         required_fields = ['phone_number', 'email', 'amount']

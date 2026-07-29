@@ -4,8 +4,7 @@ B2C (Business to Customer) routes for handling payouts, refunds, and rewards
 import os
 import logging
 from flask import request, jsonify, Blueprint
-from pypaystack2 import Paystack
-from pypaystack2.errors import InvalidDataError, UnwantedDataError
+from ..paystack_client import Paystack, InvalidDataError, UnwantedDataError
 from ..extensions import db
 from ..models import Transfer, Refund, Payment
 import datetime
@@ -38,7 +37,7 @@ def initiate_transfer():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         required_fields = ['type', 'name', 'account_number', 'amount']
@@ -217,7 +216,7 @@ def process_refund():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         if not data.get('transaction_reference'):
@@ -245,12 +244,6 @@ def process_refund():
                 'message': 'Transaction not found'
             }), 404
         
-        if payment.status != 'SUCCESS':
-            return jsonify({
-                'status': 'error',
-                'message': 'Can only refund successful transactions'
-            }), 400
-        
         # Check if idempotency key already used for this payment
         if idempotency_key:
             existing_refund = Refund.query.filter_by(
@@ -263,6 +256,12 @@ def process_refund():
                     'message': 'Refund already processed (idempotent)',
                     'data': existing_refund.to_dict()
                 }), 200
+
+        if payment.status != 'SUCCESS':
+            return jsonify({
+                'status': 'error',
+                'message': 'Can only refund successful transactions'
+            }), 400
         
         # Check if already refunded
         existing_refund = Refund.query.filter_by(

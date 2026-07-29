@@ -4,8 +4,7 @@ Paystack payment routes for handling payments, refunds, and payouts
 import os
 import logging
 from flask import request, jsonify, Blueprint
-from pypaystack2 import Paystack
-from pypaystack2.errors import InvalidDataError, UnwantedDataError
+from ..paystack_client import Paystack, InvalidDataError, UnwantedDataError
 from ..extensions import db
 from ..models import Payment, Transfer, Refund
 import datetime
@@ -53,7 +52,7 @@ def initialize_transaction():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         if not data.get('email'):
@@ -198,7 +197,7 @@ def webhook():
             return jsonify({'status': 'error', 'message': 'Invalid signature'}), 400
         
         # Process webhook event
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         event = data.get('event')
         
         logger.info(f"Webhook received: {event}")

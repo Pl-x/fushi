@@ -1,0 +1,157 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pink - Rate Your Stay</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              pink: {
+                50: '#ecfdf5',
+                100: '#d1fae5',
+                300: '#6ee7b7',
+                500: '#059669',
+                600: '#059669',
+                700: '#047857',
+              },
+            },
+          },
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>
+      body { font-family: Inter, Arial, sans-serif; background: #fafafa; }
+    </style>
+  </head>
+  <body class="min-h-screen bg-[#fafafa] px-4 py-10">
+    <div class="mx-auto max-w-md rounded-3xl border border-gray-200 bg-white p-5 shadow-lg">
+      <div class="mb-4 flex items-start justify-between gap-3">
+        <div>
+          <h2 class="text-lg font-semibold text-slate-900">The Grand Plaza Manhattan</h2>
+          <p class="text-sm text-gray-500">New York, NY</p>
+        </div>
+        <span class="rounded-full bg-pink-50 px-3 py-1 text-xs font-bold text-pink-700">+$14.00</span>
+      </div>
+
+      <div class="mb-5">
+        <h3 class="text-2xl font-bold tracking-[-0.02em] text-slate-900">Rate Your Stay</h3>
+        <p class="mt-1 text-sm text-gray-500">Rate The Grand Plaza Manhattan on each category below.</p>
+      </div>
+
+      <div class="space-y-4">
+        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="brush-cleaning" class="h-4 w-4 text-gray-500"></i>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Cleanliness</p>
+                <p class="text-xs text-gray-500">How clean were the rooms and common areas?</p>
+              </div>
+            </div>
+            <div class="flex gap-1" data-rating="cleanliness">
+              <button class="rating-star text-gray-300" data-value="1"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="2"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="3"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="4"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="5"><i data-lucide="star" class="h-5 w-5"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="bell-minus" class="h-4 w-4 text-gray-500"></i>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Staff & Service</p>
+                <p class="text-xs text-gray-500">How helpful and welcoming was the staff?</p>
+              </div>
+            </div>
+            <div class="flex gap-1" data-rating="service">
+              <button class="rating-star text-gray-300" data-value="1"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="2"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="3"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="4"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="5"><i data-lucide="star" class="h-5 w-5"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="map-pin" class="h-4 w-4 text-gray-500"></i>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Location</p>
+                <p class="text-xs text-gray-500">How convenient was the area and access?</p>
+              </div>
+            </div>
+            <div class="flex gap-1" data-rating="location">
+              <button class="rating-star text-gray-300" data-value="1"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="2"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="3"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="4"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="5"><i data-lucide="star" class="h-5 w-5"></i></button>
+            </div>
+          </div>
+        </div>
+
+        <div class="rounded-2xl border border-gray-200 bg-gray-50 p-3">
+          <div class="flex items-center justify-between gap-3">
+            <div class="flex items-center gap-2">
+              <i data-lucide="wallet" class="h-4 w-4 text-gray-500"></i>
+              <div>
+                <p class="text-sm font-semibold text-slate-900">Value for Money</p>
+                <p class="text-xs text-gray-500">Was the stay worth the price you paid?</p>
+              </div>
+            </div>
+            <div class="flex gap-1" data-rating="value">
+              <button class="rating-star text-gray-300" data-value="1"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="2"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="3"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="4"><i data-lucide="star" class="h-5 w-5"></i></button>
+              <button class="rating-star text-gray-300" data-value="5"><i data-lucide="star" class="h-5 w-5"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <a id="continueBtn" href="/dashboard" aria-disabled="true" class="pointer-events-none mt-5 block w-full rounded-xl bg-pink-300 px-4 py-3 text-center text-sm font-semibold text-white opacity-80">Continue →</a>
+    </div>
+
+    <script>
+      lucide.createIcons();
+      const groups = document.querySelectorAll('[data-rating]');
+      const continueBtn = document.getElementById('continueBtn');
+
+      groups.forEach((group) => {
+        const stars = group.querySelectorAll('.rating-star');
+        stars.forEach((star) => {
+          star.addEventListener('click', () => {
+            const value = Number(star.dataset.value);
+            stars.forEach((item, idx) => {
+              const active = idx < value;
+              item.classList.toggle('text-yellow-400', active);
+              item.classList.toggle('text-gray-300', !active);
+            });
+            const filled = Array.from(stars).filter((item) => !item.classList.contains('text-gray-300')).length;
+            if (filled > 0) {
+              group.setAttribute('data-selected', 'true');
+            }
+            const allSelected = Array.from(groups).every((item) => item.getAttribute('data-selected') === 'true');
+            continueBtn.classList.toggle('bg-pink-500', allSelected);
+            continueBtn.classList.toggle('opacity-80', !allSelected);
+            continueBtn.classList.toggle('opacity-100', allSelected);
+            continueBtn.classList.toggle('pointer-events-none', !allSelected);
+            continueBtn.setAttribute('aria-disabled', String(!allSelected));
+          });
+        });
+      });
+    </script>
+  </body>
+</html>

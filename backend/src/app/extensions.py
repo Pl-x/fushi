@@ -16,6 +16,5 @@ cors = CORS()
 limiter = Limiter(
     get_remote_address,
     default_limits=["20 per minute", "2 per second"],
-    storage_uri="redis://localhost:6381",
     strategy="fixed-window"
 )

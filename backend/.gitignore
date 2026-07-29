@@ -46,9 +46,19 @@ flask_session/
 logs/
 
 # Testing
+/tests/
 .pytest_cache/
 .coverage
 htmlcov/
+
+# Documentation (keep the project and API references)
+*.md
+!README.md
+!API_REFERENCE.md
+
+# Local hidden tool directories
+/.*/
+!/.gitignore
 
 # Migrations
 migrations/

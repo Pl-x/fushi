@@ -30,10 +30,11 @@ def verify_password(password, password_hash):
 
 def generate_jwt_token(user_id, email):
     """Generate a JWT token for a user"""
+    expiration_seconds = int(os.getenv('JWT_EXPIRATION_DELTA', JWT_EXPIRATION_DELTA))
     payload = {
         'user_id': user_id,
         'email': email,
-        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=JWT_EXPIRATION_DELTA),
+        'exp': datetime.datetime.utcnow() + datetime.timedelta(seconds=expiration_seconds),
         'iat': datetime.datetime.utcnow()
     }
     
@@ -65,7 +66,7 @@ def signup():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         required_fields = ['email', 'password', 'name']
@@ -148,7 +149,7 @@ def signin():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         if not data.get('email') or not data.get('password'):
@@ -216,7 +217,7 @@ def verify_token():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         if not data.get('token'):
             return jsonify({
@@ -269,7 +270,7 @@ def change_password():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         # Validate required fields
         required_fields = ['token', 'old_password', 'new_password']
@@ -343,7 +344,7 @@ def forgot_password():
     }
     """
     try:
-        data = request.get_json()
+        data = request.get_json(silent=True) or {}
         
         if not data.get('email'):
             return jsonify({

@@ -1,0 +1,66 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Pink — Payout receipt</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            colors: {
+              brand: { 50: '#ecfdf5', 100: '#d1fae5', 500: '#059669', 600: '#059669', 700: '#047857' },
+            },
+            boxShadow: { app: '0 2px 4px rgba(0,0,0,0.05)' },
+          },
+        },
+      };
+    </script>
+    <script src="https://unpkg.com/lucide@latest/dist/umd/lucide.js"></script>
+    <style>body { font-family: Inter, Arial, sans-serif; background: #f6f8f7; }</style>
+  </head>
+  <body class="min-h-screen bg-[#f6f8f7] px-4 py-8 text-gray-900">
+    <main class="mx-auto max-w-md">
+      <header class="mb-8 flex items-center justify-between">
+        <a href="/dashboard" class="inline-flex items-center gap-2 text-sm font-semibold text-gray-700">
+          <i data-lucide="arrow-left" class="h-4 w-4"></i> Dashboard
+        </a>
+        <span class="rounded-full bg-gray-900 px-3 py-1 text-xs font-semibold text-white">Pink</span>
+      </header>
+
+      <section class="overflow-hidden rounded-3xl border border-gray-200 bg-white shadow-app">
+        <div class="bg-gray-900 px-6 py-7 text-white">
+          <div class="flex h-12 w-12 items-center justify-center rounded-full bg-brand-500">
+            <i data-lucide="check" class="h-6 w-6"></i>
+          </div>
+          <p class="mt-5 text-xs font-semibold uppercase tracking-[0.18em] text-brand-100">Payout completed</p>
+          <h1 class="mt-2 text-3xl font-bold tracking-[-0.03em]">$14.00 paid</h1>
+          <p class="mt-2 text-sm text-gray-300">Your review earnings have been sent to M-Pesa.</p>
+        </div>
+
+        <div class="p-6">
+          <div class="mb-6 flex items-center gap-3 rounded-2xl bg-brand-50 p-4">
+            <div class="flex h-10 w-10 items-center justify-center rounded-xl bg-brand-500 text-white"><i data-lucide="smartphone" class="h-5 w-5"></i></div>
+            <div>
+              <p class="text-sm font-semibold">M-Pesa payout</p>
+              <p class="text-xs text-gray-500">+254 7xx xxx xxx</p>
+            </div>
+          </div>
+
+          <dl class="divide-y divide-gray-100 text-sm">
+            <div class="flex items-center justify-between py-3"><dt class="text-gray-500">Hotel reviewed</dt><dd class="font-semibold text-right">The Grand Plaza Manhattan</dd></div>
+            <div class="flex items-center justify-between py-3"><dt class="text-gray-500">Amount earned</dt><dd class="font-semibold text-brand-700">$14.00 USD</dd></div>
+            <div class="flex items-center justify-between py-3"><dt class="text-gray-500">Exchange estimate</dt><dd class="font-semibold">KSH 1,806.00</dd></div>
+            <div class="flex items-center justify-between py-3"><dt class="text-gray-500">Receipt number</dt><dd class="font-mono text-xs font-semibold">PNK-240814-8821</dd></div>
+            <div class="flex items-center justify-between py-3"><dt class="text-gray-500">Status</dt><dd class="inline-flex items-center gap-1.5 font-semibold text-brand-700"><span class="h-2 w-2 rounded-full bg-brand-500"></span>Paid</dd></div>
+          </dl>
+
+          <p class="mt-5 rounded-xl border border-gray-200 bg-gray-50 p-3 text-xs leading-5 text-gray-500">M-Pesa delivery can take a few minutes. Keep this receipt for your records.</p>
+          <a href="/dashboard" class="mt-6 block w-full rounded-xl bg-gray-900 px-4 py-3 text-center text-sm font-semibold text-white transition hover:bg-brand-700">Back to dashboard</a>
+        </div>
+      </section>
+    </main>
+    <script>lucide.createIcons();</script>
+  </body>
+</html>

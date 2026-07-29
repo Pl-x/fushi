@@ -3,8 +3,13 @@
 # API Testing Script for Payment Gateway
 # This script tests all major endpoints
 
-BASE_URL="http://localhost:5000"
+set -uo pipefail
+
+BASE_URL="${BASE_URL:-http://localhost:5000}"
 API_URL="$BASE_URL/api/v1"
+RUN_LIVE_PAYMENT_TESTS="${RUN_LIVE_PAYMENT_TESTS:-0}"
+TEST_EMAIL="testuser.$(date +%s).$RANDOM@example.com"
+TEST_PASSWORD="password123"
 
 echo "========================================="
 echo "Payment Gateway API Testing"
@@ -28,7 +33,7 @@ print_result() {
 
 # Test 1: Health Check
 echo "Test 1: Health Check"
-response=$(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/health)
+response=$(curl -sS -o /dev/null -w "%{http_code}" "$BASE_URL/health" || true)
 if [ "$response" = "200" ]; then
     print_result 0 "Health check endpoint"
 else
@@ -38,7 +43,7 @@ echo ""
 
 # Test 2: Root endpoint
 echo "Test 2: Root Endpoint"
-response=$(curl -s -o /dev/null -w "%{http_code}" $BASE_URL/)
+response=$(curl -sS -o /dev/null -w "%{http_code}" "$BASE_URL/" || true)
 if [ "$response" = "200" ]; then
     print_result 0 "Root endpoint"
 else
@@ -48,11 +53,11 @@ echo ""
 
 # Test 3: User Signup
 echo "Test 3: User Signup"
-signup_response=$(curl -s -X POST $API_URL/auth/signup \
+signup_response=$(curl -sS -X POST "$API_URL/auth/signup" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "testuser'$(date +%s)'@example.com",
-    "password": "password123",
+    "email": "'$TEST_EMAIL'",
+    "password": "'$TEST_PASSWORD'",
     "name": "Test User",
     "phone_number": "+2348012345678"
   }')
@@ -60,7 +65,7 @@ signup_response=$(curl -s -X POST $API_URL/auth/signup \
 if echo "$signup_response" | grep -q "success"; then
     print_result 0 "User signup"
     # Extract token
-    TOKEN=$(echo $signup_response | grep -o '"token":"[^"]*' | cut -d'"' -f4)
+    TOKEN=$(echo "$signup_response" | grep -o '"token":"[^"]*' | cut -d'"' -f4)
     echo -e "${YELLOW}Token extracted for further tests${NC}"
 else
     print_result 1 "User signup"
@@ -70,11 +75,11 @@ echo ""
 
 # Test 4: User Signin
 echo "Test 4: User Signin"
-signin_response=$(curl -s -X POST $API_URL/auth/signin \
+signin_response=$(curl -sS -X POST "$API_URL/auth/signin" \
   -H "Content-Type: application/json" \
   -d '{
-    "email": "testuser@example.com",
-    "password": "password123"
+    "email": "'$TEST_EMAIL'",
+    "password": "'$TEST_PASSWORD'"
   }')
 
 if echo "$signin_response" | grep -q "success\|Invalid"; then
@@ -88,6 +93,9 @@ else
 fi
 echo ""
 
+if [ "$RUN_LIVE_PAYMENT_TESTS" != "1" ]; then
+    echo -e "${YELLOW}Skipping Paystack payment, transfer, and refund calls. Set RUN_LIVE_PAYMENT_TESTS=1 to enable them.${NC}"
+else
 # Test 5: Initialize Payment (C2B)
 echo "Test 5: Initialize Payment (C2B with mobile_money channel)"
 payment_response=$(curl -s -X POST $API_URL/c2b/initialize \
@@ -104,7 +112,7 @@ payment_response=$(curl -s -X POST $API_URL/c2b/initialize \
 if echo "$payment_response" | grep -q "success\|authorization_url"; then
     print_result 0 "Initialize payment"
     # Extract reference
-    PAYMENT_REF=$(echo $payment_response | grep -o '"reference":"[^"]*' | cut -d'"' -f4)
+    PAYMENT_REF=$(echo "$payment_response" | grep -o '"reference":"[^"]*' | cut -d'"' -f4)
     echo -e "${YELLOW}Payment reference: $PAYMENT_REF${NC}"
 else
     print_result 1 "Initialize payment"
@@ -126,7 +134,7 @@ mpesa_response=$(curl -s -X POST $API_URL/c2b/mpesa/initialize \
 if echo "$mpesa_response" | grep -q "success\|authorization_url"; then
     print_result 0 "Initialize M-Pesa payment (simplified)"
     # Extract reference
-    MPESA_REF=$(echo $mpesa_response | grep -o '"reference":"[^"]*' | cut -d'"' -f4)
+    MPESA_REF=$(echo "$mpesa_response" | grep -o '"reference":"[^"]*' | cut -d'"' -f4)
     echo -e "${YELLOW}M-Pesa reference: $MPESA_REF${NC}"
 else
     print_result 1 "Initialize M-Pesa payment (simplified)"
@@ -135,7 +143,7 @@ fi
 echo ""
 
 # Test 6: Verify Payment (will fail without actual payment)
-if [ ! -z "$PAYMENT_REF" ]; then
+if [ -n "${PAYMENT_REF:-}" ]; then
     echo "Test 6: Verify Payment"
     verify_response=$(curl -s -X GET $API_URL/c2b/verify/$PAYMENT_REF)
     if echo "$verify_response" | grep -q "PENDING\|SUCCESS\|FAILED"; then
@@ -208,13 +216,15 @@ else
 fi
 echo ""
 
+fi
+
 # Test 11: Token Verification
-if [ ! -z "$TOKEN" ]; then
+if [ -n "${TOKEN:-}" ]; then
     echo "Test 11: Token Verification"
-    token_response=$(curl -s -X POST $API_URL/auth/verify-token \
+    token_response=$(curl -sS -X POST "$API_URL/auth/verify-token" \
       -H "Content-Type: application/json" \
       -d "{\"token\": \"$TOKEN\"}")
-    
+
     if echo "$token_response" | grep -q "success"; then
         print_result 0 "Token verification"
     else
@@ -234,4 +244,4 @@ echo "  - Redis is not running"
 echo "  - Application is not running on port 5000"
 echo ""
 echo "To start the application:"
-echo "  python run.py"
+echo "  .venv/bin/python run.py"
