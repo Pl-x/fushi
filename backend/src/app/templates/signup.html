@@ -16,12 +16,13 @@
         <a href="/welcome" class="text-sm font-semibold text-brand-700">← Pink</a>
         <p class="mt-7 text-xs font-semibold uppercase tracking-[0.18em] text-brand-700">Get started</p>
         <h1 class="mt-2 text-3xl font-bold tracking-[-0.03em]">Start earning from reviews.</h1>
-        <p class="mt-2 text-sm leading-6 text-gray-500">Create your reviewer account. Your payouts are managed in USD and sent through M-Pesa.</p>
+        <p class="mt-2 text-sm leading-6 text-gray-500">Create your Kenya reviewer account. Earnings and payouts are in KES through M-Pesa.</p>
         <form id="signupForm" class="mt-7 space-y-4">
           <div><label for="name" class="mb-1.5 block text-sm font-semibold">Full name</label><input id="name" name="name" required autocomplete="name" class="h-12 w-full rounded-xl border border-gray-300 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" placeholder="Wanjiku Njeri" /></div>
           <div><label for="email" class="mb-1.5 block text-sm font-semibold">Email address</label><input id="email" name="email" type="email" required autocomplete="email" class="h-12 w-full rounded-xl border border-gray-300 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" placeholder="you@example.com" /></div>
-          <div><label for="phone_number" class="mb-1.5 block text-sm font-semibold">M-Pesa phone number <span class="font-normal text-gray-400">(optional)</span></label><input id="phone_number" name="phone_number" type="tel" autocomplete="tel" class="h-12 w-full rounded-xl border border-gray-300 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" placeholder="+254 7xx xxx xxx" /></div>
+          <div><label for="phone_number" class="mb-1.5 block text-sm font-semibold">Kenyan M-Pesa phone number</label><input id="phone_number" name="phone_number" type="tel" required autocomplete="tel" class="h-12 w-full rounded-xl border border-gray-300 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" placeholder="+254 7xx xxx xxx" /></div>
           <div><label for="password" class="mb-1.5 block text-sm font-semibold">Password</label><input id="password" name="password" type="password" minlength="8" required autocomplete="new-password" class="h-12 w-full rounded-xl border border-gray-300 px-3 text-sm outline-none focus:border-brand-500 focus:ring-2 focus:ring-brand-100" placeholder="At least 8 characters" /><p class="mt-1.5 text-xs text-gray-500">Use at least 8 characters.</p></div>
+          <label class="flex items-start gap-2 text-sm text-gray-600"><input name="terms_accepted" type="checkbox" required class="mt-1 h-4 w-4"><span>I agree to the <a class="font-semibold text-brand-700 underline" href="/terms" target="_blank">Terms and Conditions</a>.</span></label>
           <p id="formMessage" class="hidden rounded-xl px-3 py-2 text-sm" role="alert"></p>
           <button id="submitButton" type="submit" class="h-12 w-full rounded-xl bg-gray-900 text-sm font-semibold text-white transition hover:bg-brand-700">Create secure account</button>
         </form>
@@ -38,7 +39,8 @@
         submitButton.disabled = true;
         submitButton.textContent = 'Creating account…';
         try {
-          const response = await fetch('/api/v1/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(Object.fromEntries(new FormData(form))) });
+          const payloadData = Object.fromEntries(new FormData(form)); payloadData.terms_accepted = form.terms_accepted.checked;
+          const response = await fetch('/api/v1/auth/signup', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payloadData) });
           const payload = await response.json();
           if (!response.ok) throw new Error(payload.message || 'Unable to create your account.');
           localStorage.setItem('pinkToken', payload.data.token);

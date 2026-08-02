@@ -7,6 +7,8 @@ class Payment(db.Model):
     '''Database model for payments - supports both M-Pesa and Paystack.'''
     __tablename__ = 'payments'
     id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=True, index=True)
+    purpose = db.Column(db.String(40), nullable=True)  # CREDIT_DEPOSIT or a normal payment
     
     # Common fields
     phone_number = db.Column(db.String(20), nullable=True)  # For M-Pesa: 2547XXXXXXXX
@@ -39,6 +41,7 @@ class Payment(db.Model):
     transaction_date = db.Column(db.DateTime, nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     updated_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, onupdate=datetime.datetime.utcnow)
+    user = db.relationship('User', backref=db.backref('payments', lazy=True))
 
     def __repr__(self):
         return f"<Payment {self.id} - {self.currency} {self.amount/100} - {self.status} - {self.payment_provider}>"
@@ -284,6 +287,8 @@ class User(db.Model):
     # Administrative access is granted explicitly in the database; ordinary
     # users can never obtain it through the public signup route.
     is_admin = db.Column(db.Boolean, default=False, nullable=False)
+    terms_accepted_at = db.Column(db.DateTime, nullable=True)
+    terms_version = db.Column(db.String(20), nullable=True)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
 
@@ -299,6 +304,7 @@ class User(db.Model):
             'phone_number': self.phone_number,
             'is_active': self.is_active,
             'is_admin': self.is_admin,
+            'terms_accepted_at': self.terms_accepted_at.isoformat() if self.terms_accepted_at else None,
             'created_at': self.created_at.isoformat()
         }
 
@@ -359,6 +365,21 @@ class PlatformSetting(db.Model):
     __tablename__ = 'platform_settings'
     key = db.Column(db.String(80), primary_key=True)
     value = db.Column(db.String(255), nullable=False)
+
+
+class CreditLedger(db.Model):
+    """Immutable reviewer-credit entries; 100 units equal one credit."""
+    __tablename__ = 'credit_ledger'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False, index=True)
+    amount_units = db.Column(db.Integer, nullable=False)
+    entry_type = db.Column(db.String(30), nullable=False)  # DEPOSIT or REVIEW_FEE
+    payment_id = db.Column(db.Integer, db.ForeignKey('payments.id'), unique=True, nullable=True)
+    review_id = db.Column(db.Integer, db.ForeignKey('hotel_reviews.id'), unique=True, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow, nullable=False)
+    user = db.relationship('User')
+    payment = db.relationship('Payment')
+    review = db.relationship('HotelReview')
 
 
 class PayoutRequest(db.Model):

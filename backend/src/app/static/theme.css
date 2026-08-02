@@ -2,9 +2,18 @@
   color-scheme: light;
 }
 
+/* Subtle finance/review backdrop: ledger lines with restrained cash-green light. */
+body {
+  background-color: #f4f8f5 !important;
+  background-image: radial-gradient(circle at 8% 4%, rgb(5 150 105 / 13%), transparent 24rem), radial-gradient(circle at 96% 16%, rgb(16 185 129 / 9%), transparent 22rem), linear-gradient(rgb(16 96 67 / 4%) 1px, transparent 1px), linear-gradient(90deg, rgb(16 96 67 / 4%) 1px, transparent 1px) !important;
+  background-size: auto, auto, 30px 30px, 30px 30px !important;
+  background-attachment: fixed !important;
+}
+
 body.theme-dark {
   color-scheme: dark;
   background-color: #0b1210 !important;
+  background-image: radial-gradient(circle at 8% 4%, rgb(5 150 105 / 18%), transparent 24rem), radial-gradient(circle at 96% 16%, rgb(16 185 129 / 10%), transparent 22rem), linear-gradient(rgb(154 255 202 / 4%) 1px, transparent 1px), linear-gradient(90deg, rgb(154 255 202 / 4%) 1px, transparent 1px) !important;
   color: #edf5ef !important;
 }
 

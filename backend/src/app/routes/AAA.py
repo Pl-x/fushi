@@ -16,6 +16,16 @@ aaa_bp = Blueprint('aaa', __name__)
 
 SECRET_KEY = os.getenv('SECRET_KEY', 'supersecretkey')
 JWT_EXPIRATION_DELTA = int(os.getenv('JWT_EXPIRATION_DELTA', 3600))
+TERMS_VERSION = '2026-08-02'
+
+
+def _kenyan_mobile_number(phone_number):
+    digits = ''.join(character for character in (phone_number or '') if character.isdigit())
+    if digits.startswith('0') and len(digits) == 10:
+        digits = f'254{digits[1:]}'
+    elif digits.startswith('7') and len(digits) == 9:
+        digits = f'254{digits}'
+    return digits if len(digits) == 12 and digits.startswith('2547') else None
 
 
 def hash_password(password):
@@ -69,7 +79,7 @@ def signup():
         data = request.get_json(silent=True) or {}
         
         # Validate required fields
-        required_fields = ['email', 'password', 'name']
+        required_fields = ['email', 'password', 'name', 'phone_number']
         for field in required_fields:
             if not data.get(field):
                 return jsonify({
@@ -80,7 +90,11 @@ def signup():
         email = data['email']
         password = data['password']
         name = data['name']
-        phone_number = data.get('phone_number')
+        phone_number = _kenyan_mobile_number(data.get('phone_number'))
+        if not phone_number:
+            return jsonify({'status': 'error', 'message': 'A valid Kenyan M-Pesa number is required'}), 400
+        if data.get('terms_accepted') is not True:
+            return jsonify({'status': 'error', 'message': 'You must accept the Terms and Conditions'}), 400
         
         # Validate email format
         if '@' not in email:
@@ -112,7 +126,9 @@ def signup():
             email=email,
             password_hash=password_hash,
             name=name,
-            phone_number=phone_number
+            phone_number=phone_number,
+            terms_accepted_at=datetime.datetime.utcnow(),
+            terms_version=TERMS_VERSION,
         )
         
         db.session.add(user)

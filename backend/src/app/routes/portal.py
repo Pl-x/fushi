@@ -11,7 +11,7 @@ import jwt
 from sqlalchemy.exc import DataError, IntegrityError
 
 from ..extensions import db
-from ..models import Hotel, HotelReview, PlatformSetting, PayoutRequest, ReviewerProfile, Transfer, User
+from ..models import CreditLedger, Hotel, HotelReview, Payment, PlatformSetting, PayoutRequest, Refund, ReviewerProfile, Transfer, User
 from ..paystack_client import InvalidDataError, Paystack
 from .AAA import verify_jwt_token, verify_password
 
@@ -92,6 +92,17 @@ def _reward_cents(data, default=102100):
     return cents if 1 <= cents <= 100_000_000 else None
 
 
+def _credit_balance_units(user_id):
+    """Credits have two decimals: KES 1 buys 0.01 credit (one unit)."""
+    return db.session.query(db.func.coalesce(db.func.sum(CreditLedger.amount_units), 0)).filter_by(user_id=user_id).scalar()
+
+
+def _review_credit_cost_units(hotel):
+    """A review costs 1% of its reward, with a 10.54-credit minimum."""
+    # 1,054 units is 10.54 credits.  Higher hotel payouts cost proportionally more.
+    return max(1054, hotel.review_reward_cents // 100)
+
+
 @portal_bp.get('/me')
 @login_required
 def me(user):
@@ -100,7 +111,8 @@ def me(user):
     paid = sum(review.reward_cents for review in reviews if review.status == 'PAID')
     available = sum(review.reward_cents for review in reviews if review.status == 'APPROVED')
     in_progress = sum(review.reward_cents for review in reviews if review.status == 'PAYOUT_REQUESTED')
-    return jsonify({'status': 'success', 'data': {'user': user.to_dict(), 'profile': profile.to_dict(), 'balance_cents': available, 'paid_cents': paid, 'payout_in_progress_cents': in_progress, 'reviews': [review.to_dict() for review in reviews], 'payouts_enabled': _payouts_enabled()}})
+    credit_units = _credit_balance_units(user.id)
+    return jsonify({'status': 'success', 'data': {'user': user.to_dict(), 'profile': profile.to_dict(), 'balance_cents': available, 'paid_cents': paid, 'payout_in_progress_cents': in_progress, 'credit_units': credit_units, 'credit_balance': credit_units / 100, 'reviews': [review.to_dict() for review in reviews], 'payouts_enabled': _payouts_enabled()}})
 
 
 @portal_bp.patch('/me')
@@ -127,7 +139,7 @@ def hotels(user):
     query = Hotel.query.filter_by(is_active=True)
     if category and category.lower() != 'all':
         query = query.filter(db.func.lower(Hotel.category) == category.lower())
-    return jsonify({'status': 'success', 'data': [hotel.to_dict() for hotel in query.order_by(Hotel.created_at.desc()).all()]})
+    return jsonify({'status': 'success', 'data': [{**hotel.to_dict(), 'review_credit_cost_units': _review_credit_cost_units(hotel)} for hotel in query.order_by(Hotel.created_at.desc()).all()]})
 
 
 @portal_bp.post('/reviews')
@@ -140,8 +152,13 @@ def create_review(user):
         return jsonify({'status': 'error', 'message': 'Hotel and four ratings from 1 to 5 are required'}), 400
     if HotelReview.query.filter_by(user_id=user.id, hotel_id=hotel.id).first():
         return jsonify({'status': 'error', 'message': 'You have already reviewed this hotel'}), 409
+    credit_cost = _review_credit_cost_units(hotel)
+    if _credit_balance_units(user.id) < credit_cost:
+        return jsonify({'status': 'error', 'message': f'Insufficient credits. This review requires {credit_cost / 100:.2f} credits. Deposit credits to continue.', 'required_credit_units': credit_cost}), 402
     review = HotelReview(user_id=user.id, hotel_id=hotel.id, reward_cents=hotel.review_reward_cents, **{key: data[key] for key in ratings})
     db.session.add(review)
+    db.session.flush()
+    db.session.add(CreditLedger(user_id=user.id, amount_units=-credit_cost, entry_type='REVIEW_FEE', review_id=review.id))
     db.session.commit()
     return jsonify({'status': 'success', 'message': f'Review submitted. KES {review.reward_cents / 100:,.2f} is available for payout.', 'data': review.to_dict()}), 201
 
@@ -268,6 +285,18 @@ def set_payouts():
 def payout_requests():
     requests = PayoutRequest.query.order_by(PayoutRequest.created_at.desc()).all()
     return jsonify({'status': 'success', 'data': [{**payout.to_dict(), 'reviewer': payout.user.name, 'phone_number': payout.user.phone_number} for payout in requests]})
+
+
+@portal_bp.get('/admin/transactions')
+@admin_required
+def admin_transactions():
+    """One admin feed for deposits, transfers, and refunds."""
+    entries = []
+    entries.extend({'type': 'PAYMENT', **payment.to_dict(), 'purpose': payment.purpose, 'reviewer': payment.user.name if payment.user else None} for payment in Payment.query.order_by(Payment.created_at.desc()).all())
+    entries.extend({'type': 'PAYOUT', **transfer.to_dict(), 'created_at': transfer.created_at.isoformat()} for transfer in Transfer.query.order_by(Transfer.created_at.desc()).all())
+    entries.extend({'type': 'REFUND', **refund.to_dict()} for refund in Refund.query.order_by(Refund.created_at.desc()).all())
+    entries.sort(key=lambda entry: entry.get('created_at') or '', reverse=True)
+    return jsonify({'status': 'success', 'data': entries})
 
 
 @portal_bp.patch('/admin/payout-requests/<int:request_id>')

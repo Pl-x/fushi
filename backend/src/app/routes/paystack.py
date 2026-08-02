@@ -6,7 +6,7 @@ import logging
 from flask import request, jsonify, Blueprint
 from ..paystack_client import Paystack, InvalidDataError, UnwantedDataError
 from ..extensions import db
-from ..models import HotelReview, Payment, PayoutRequest, Transfer, Refund
+from ..models import CreditLedger, HotelReview, Payment, PayoutRequest, Transfer, Refund
 from ..guards.jwtguard import admin_required, jwt_required
 import datetime
 
@@ -20,6 +20,15 @@ if not PAYSTACK_SECRET_KEY:
     logger.warning("PAYSTACK_SECRET_KEY not set in environment variables")
 
 paystack = Paystack(secret_key=PAYSTACK_SECRET_KEY) if PAYSTACK_SECRET_KEY else None
+
+
+def _grant_deposit_credits(payment):
+    """Credit a confirmed KES deposit once; one KES equals 0.01 credit."""
+    if payment.purpose != 'CREDIT_DEPOSIT' or not payment.user_id:
+        return
+    if not CreditLedger.query.filter_by(payment_id=payment.id).first():
+        # Payment is stored in cents; the ledger unit is one hundredth of a credit.
+        db.session.add(CreditLedger(user_id=payment.user_id, amount_units=payment.amount // 100, entry_type='DEPOSIT', payment_id=payment.id))
 
 
 def verify_paystack_signature(payload, signature):
@@ -69,7 +78,9 @@ def initialize_transaction():
         # Prepare transaction data
         amount = int(data['amount'])
         email = data['email']
-        currency = data.get('currency', 'NGN')
+        currency = data.get('currency', 'KES').upper()
+        if currency != 'KES' or amount < 1:
+            return jsonify({'status': 'error', 'message': 'Payments must use KES and a positive amount'}), 400
         reference = data.get('reference')
         callback_url = data.get('callback_url')
         metadata = data.get('metadata', {})
@@ -87,6 +98,8 @@ def initialize_transaction():
         if response['status']:
             # Save payment record to database
             payment = Payment(
+                user_id=request.current_user.id,
+                purpose='CREDIT_DEPOSIT' if data.get('purpose') == 'CREDIT_DEPOSIT' else None,
                 email=email,
                 amount=amount,
                 currency=currency,
@@ -149,6 +162,7 @@ def verify_transaction(reference):
                 payment.receipt_number = response['data'].get('id')
                 payment.transaction_date = datetime.datetime.utcnow()
                 payment.authorization_code = response['data'].get('authorization', {}).get('authorization_code')
+                _grant_deposit_credits(payment)
                 
                 db.session.commit()
                 
@@ -216,6 +230,7 @@ def webhook():
                 payment.channel = transaction_data.get('channel')
                 payment.receipt_number = str(transaction_data.get('id'))
                 payment.transaction_date = datetime.datetime.utcnow()
+                _grant_deposit_credits(payment)
                 db.session.commit()
                 
         elif event == 'transfer.success':

@@ -177,6 +177,10 @@ def create_app():
     def signup_page():
         return render_template('signup.html')
 
+    @app.get('/terms')
+    def terms_page():
+        return render_template('terms.html')
+
     @app.get('/dashboard')
     def dashboard():
         return render_template('dashboard.html')
@@ -216,6 +220,10 @@ def create_app():
     @app.get('/admin/payouts')
     def admin_payouts():
         return render_template('admin_payouts.html')
+
+    @app.get('/admin/transactions')
+    def admin_transactions_page():
+        return render_template('admin_transactions.html')
 
     @app.get('/deposit')
     def deposit():

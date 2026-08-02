@@ -41,7 +41,7 @@
         <div>
           <p class="text-[11px] font-semibold uppercase tracking-[0.18em] text-pink-600">Lets Review</p>
           <h1 class="text-2xl font-bold tracking-[-0.02em]">Hotels to Review</h1>
-          <p class="mt-1 text-sm text-gray-500">Write an honest review and earn KES 1,021.00 per review.</p>
+          <p class="mt-1 text-sm text-gray-500">Review payout and credit cost are set separately for every hotel.</p>
         </div>
       </div>
 
@@ -53,11 +53,7 @@
         <button class="filter-chip rounded-full border border-gray-200 bg-white px-4 py-2 text-xs font-semibold text-gray-600" data-filter="resort" aria-pressed="false">Resort</button>
       </div>
 
-      <div class="mb-5 flex gap-2 overflow-x-auto scrollbar-none">
-        <span class="rounded-full bg-pink-50 px-3 py-1 text-[11px] font-medium text-pink-700">Wangari KSH 108,273</span>
-        <span class="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-gray-700">Njeri KSH 66,401</span>
-        <span class="rounded-full bg-gray-100 px-3 py-1 text-[11px] font-medium text-gray-700">Muthoni KSH 45,790</span>
-      </div>
+      <p id="creditHint" class="mb-5 rounded-xl bg-emerald-50 p-3 text-sm text-emerald-800">Loading your review credits…</p>
 
       <div id="hotelList" class="grid gap-4 md:grid-cols-2 xl:grid-cols-3">
         <article data-category="luxury" class="hotel-card overflow-hidden rounded-2xl border border-gray-200 bg-white shadow-app">
@@ -106,9 +102,9 @@
       const hotelList = document.getElementById('hotelList');
       const loadHotels = (category = 'all') => fetch(`/api/v1/portal/hotels?category=${category}`, {headers:{Authorization:`Bearer ${token}`}}).then(r=>r.json()).then(p => {
         if (!p.data) return;
-        hotelList.innerHTML = p.data.map(h => { const reward = Number(h.review_reward_cents); const rewardLabel = Number.isFinite(reward) ? `KES ${(reward / 100).toLocaleString('en-KE',{minimumFractionDigits:2})}` : 'Set reward in admin'; return `<article class="overflow-hidden rounded-2xl border bg-white shadow-app"><img class="h-44 w-full object-cover" src="${h.image_url}" alt="${h.name}" onerror="this.onerror=null;this.src='/static/hotel-placeholder.svg'"><div class="p-4"><h2 class="text-lg font-semibold">${h.name}</h2><p class="text-sm text-gray-500">${h.location} · ${h.category}</p><p class="mt-2 text-sm text-gray-600">★ ${h.rating} · ${h.nightly_rate}<br>${h.address}</p><a href="/review?hotel_id=${h.id}" class="mt-4 block w-full rounded-xl bg-pink-600 p-3 text-center text-sm font-semibold text-white">Write Review & Earn ${rewardLabel}</a></div></article>`; }).join('') || '<p class="rounded-xl bg-white p-4 text-sm text-gray-500">No hotels are currently available.</p>';
+        hotelList.innerHTML = p.data.map(h => { const reward = Number(h.review_reward_cents); const rewardLabel = Number.isFinite(reward) ? `KES ${(reward / 100).toLocaleString('en-KE',{minimumFractionDigits:2})}` : 'Set reward in admin'; const cost=`${(Number(h.review_credit_cost_units||0)/100).toFixed(2)} credits required`; return `<article class="overflow-hidden rounded-2xl border bg-white shadow-app"><img class="h-44 w-full object-cover" src="${h.image_url}" alt="${h.name}" onerror="this.onerror=null;this.src='/static/hotel-placeholder.svg'"><div class="p-4"><h2 class="text-lg font-semibold">${h.name}</h2><p class="text-sm text-gray-500">${h.location} · ${h.category}</p><p class="mt-2 text-sm text-gray-600">★ ${h.rating} · ${h.nightly_rate}<br>${h.address}</p><p class="mt-2 text-xs font-semibold text-emerald-700">${cost}</p><a href="/review?hotel_id=${h.id}" class="mt-4 block w-full rounded-xl bg-pink-600 p-3 text-center text-sm font-semibold text-white">Write Review & Earn ${rewardLabel}</a></div></article>`; }).join('') || '<p class="rounded-xl bg-white p-4 text-sm text-gray-500">No hotels are currently available.</p>';
       });
-      if (!token) window.location.assign('/signin'); else loadHotels();
+      if (!token) window.location.assign('/signin'); else { loadHotels(); fetch('/api/v1/portal/me',{headers:{Authorization:`Bearer ${token}`}}).then(r=>r.json()).then(p=>{if(p.data)document.querySelector('#creditHint').textContent=`You have ${(Number(p.data.credit_balance)||0).toFixed(2)} credits. Higher-payout hotels require more credits (1% of the payout).`;}); }
       document.querySelectorAll('.filter-chip').forEach((chip) => {
         chip.addEventListener('click', () => {
           const filter = chip.dataset.filter;
