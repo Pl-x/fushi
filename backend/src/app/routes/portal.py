@@ -98,9 +98,13 @@ def _credit_balance_units(user_id):
 
 
 def _review_credit_cost_units(hotel):
-    """A review costs 1% of its reward, with a 10.54-credit minimum."""
-    # 1,054 units is 10.54 credits.  Higher hotel payouts cost proportionally more.
-    return max(1054, hotel.review_reward_cents // 100)
+    """A review costs 1% of its reward, with an administrator-controlled floor."""
+    setting = db.session.get(PlatformSetting, 'minimum_review_credit_units')
+    try:
+        minimum = int(setting.value) if setting else 1054
+    except (TypeError, ValueError):
+        minimum = 1054
+    return max(minimum, hotel.review_reward_cents // 100)
 
 
 @portal_bp.get('/me')
@@ -278,6 +282,33 @@ def set_payouts():
     db.session.merge(setting)
     db.session.commit()
     return jsonify({'status': 'success', 'data': {'payouts_enabled': enabled}})
+
+
+@portal_bp.get('/admin/settings')
+@admin_required
+def admin_settings():
+    setting = db.session.get(PlatformSetting, 'minimum_review_credit_units')
+    try:
+        minimum = int(setting.value) if setting else 1054
+    except (TypeError, ValueError):
+        minimum = 1054
+    return jsonify({'status': 'success', 'data': {'minimum_review_credit_units': minimum, 'minimum_review_credits': minimum / 100}})
+
+
+@portal_bp.patch('/admin/settings')
+@admin_required
+def update_admin_settings():
+    data = request.get_json(silent=True) or {}
+    try:
+        credits = Decimal(str(data.get('minimum_review_credits')))
+        units = int(credits * 100)
+    except (InvalidOperation, TypeError, ValueError):
+        return jsonify({'status': 'error', 'message': 'Minimum review credits must be a number'}), 400
+    if not 1 <= units <= 1_000_000:
+        return jsonify({'status': 'error', 'message': 'Minimum review credits must be between 0.01 and 10,000.00'}), 400
+    db.session.merge(PlatformSetting(key='minimum_review_credit_units', value=str(units)))
+    db.session.commit()
+    return jsonify({'status': 'success', 'data': {'minimum_review_credit_units': units, 'minimum_review_credits': units / 100}})
 
 
 @portal_bp.get('/admin/payout-requests')
