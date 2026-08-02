@@ -1,6 +1,7 @@
 from flask import Flask, render_template
 from werkzeug.middleware.proxy_fix import ProxyFix
 from sqlalchemy import text
+from sqlalchemy.engine import URL
 from .extensions import db, migrate, cors, limiter
 import os
 import logging
@@ -19,7 +20,7 @@ PSQL_CONFIG = {
 
 
 _PLACEHOLDER_VALUES = {
-    '', 'password', 'postgres', 'payment_gateway', 'your-super-secret-key-change-this',
+    '', 'password', 'your-super-secret-key-change-this',
     'your-database-password', 'sk_test_your_paystack_secret_key',
     'sk_live_your_paystack_secret_key', 'change-me', 'secret', 'supersecretkey',
 }
@@ -71,9 +72,15 @@ def create_app():
     app.config['SECRET_KEY'] = os.getenv('SECRET_KEY', 'supersecretkey')
     app.config['TESTING'] = os.getenv('TESTING', '').lower() == 'true'
     app.config['JWT_EXPIRATION_DELTA'] = int(os.getenv('JWT_EXPIRATION_DELTA', 3600))  # Default to 1 hour
-    default_database_uri = (
-        f"postgresql://{PSQL_CONFIG['user']}:{PSQL_CONFIG['password']}"
-        f"@{PSQL_CONFIG['host']}:{PSQL_CONFIG['port']}/{PSQL_CONFIG['db']}"
+    # URL.create escapes credentials correctly. Passwords supplied by managed
+    # PostgreSQL providers commonly contain @, :, /, or other URL characters.
+    default_database_uri = URL.create(
+        'postgresql',
+        username=PSQL_CONFIG['user'],
+        password=PSQL_CONFIG['password'],
+        host=PSQL_CONFIG['host'],
+        port=int(PSQL_CONFIG['port']),
+        database=PSQL_CONFIG['db'],
     )
     app.config['SQLALCHEMY_DATABASE_URI'] = os.getenv(
         'SQLALCHEMY_DATABASE_URI', default_database_uri
