@@ -126,7 +126,7 @@ def initiate_transfer():
                 currency=currency,
                 reason=reason,
                 reference=reference,
-                status='PENDING',
+                status='OTP_REQUIRED' if transfer_response['data'].get('status') == 'otp' else 'PENDING',
                 transfer_code=transfer_response['data'].get('transfer_code'),
                 idempotency_key=idempotency_key
             )
@@ -153,6 +153,25 @@ def initiate_transfer():
     except Exception as e:
         logger.error(f"Error initiating transfer: {str(e)}")
         return jsonify({'status': 'error', 'message': 'Internal server error'}), 500
+
+
+@b2c_bp.route('/transfer/<reference>/finalize', methods=['POST'])
+@admin_required
+def finalize_transfer(reference):
+    """Finalize an administrator-created Paystack transfer that requires OTP."""
+    transfer = Transfer.query.filter_by(reference=reference).first()
+    otp = (request.get_json(silent=True) or {}).get('otp', '').strip()
+    if not transfer or transfer.status != 'OTP_REQUIRED' or not otp:
+        return jsonify({'status': 'error', 'message': 'An OTP-required transfer and OTP are required'}), 400
+    if not paystack:
+        return jsonify({'status': 'error', 'message': 'Paystack not configured'}), 503
+    try:
+        paystack.transfer.finalize(transfer.transfer_code, otp)
+        transfer.status = 'PENDING'
+        db.session.commit()
+        return jsonify({'status': 'success', 'message': 'OTP accepted; awaiting Paystack confirmation', 'data': transfer.to_dict()}), 202
+    except InvalidDataError as error:
+        return jsonify({'status': 'error', 'message': str(error)}), 400
 
 
 @b2c_bp.route("/transfer/verify/<reference>", methods=['GET'])
