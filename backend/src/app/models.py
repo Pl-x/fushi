@@ -350,6 +350,7 @@ class HotelReview(db.Model):
     service = db.Column(db.Integer, nullable=False)
     location_rating = db.Column(db.Integer, nullable=False)
     value = db.Column(db.Integer, nullable=False)
+    comment = db.Column(db.Text, nullable=True)
     status = db.Column(db.String(20), default='APPROVED', nullable=False)
     # Amounts use the currency's minor unit. KES 1,021.00 is 102100 cents.
     reward_cents = db.Column(db.Integer, default=102100, nullable=False)
@@ -358,7 +359,7 @@ class HotelReview(db.Model):
     user = db.relationship('User')
 
     def to_dict(self):
-        return {'id': self.id, 'hotel': self.hotel.name, 'hotel_id': self.hotel_id, 'status': self.status, 'reward_cents': self.reward_cents, 'created_at': self.created_at.isoformat()}
+        return {'id': self.id, 'hotel': self.hotel.name, 'hotel_id': self.hotel_id, 'status': self.status, 'reward_cents': self.reward_cents, 'comment': self.comment, 'created_at': self.created_at.isoformat()}
 
 
 class PlatformSetting(db.Model):

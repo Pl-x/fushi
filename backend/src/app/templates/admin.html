@@ -16,11 +16,12 @@
     </div>
     <p class="mt-1 text-sm text-gray-500">Publish, edit, hide, or remove hotel listings and manage reviewer payouts.</p>
 
-    <section class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
+    <section class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-6">
       <a href="#publish" class="rounded-2xl bg-gray-900 p-5 text-white"><b class="block">Publish hotel</b><span class="mt-1 block text-sm text-gray-300">Add a live listing</span></a>
       <a href="/admin/payouts" class="rounded-2xl bg-emerald-600 p-5 text-white"><b class="block">Payout requests</b><span class="mt-1 block text-sm text-emerald-100">Approve individually</span></a>
       <a href="#hotels" class="rounded-2xl border bg-white p-5"><b class="block">Manage hotels</b><span class="mt-1 block text-sm text-gray-500">Modify, hide, or delete</span></a>
       <a href="/admin/transactions" class="rounded-2xl border bg-white p-5"><b class="block">Transactions</b><span class="mt-1 block text-sm text-gray-500">Payments, payouts, refunds</span></a>
+      <a href="/admin/reviews" class="rounded-2xl border bg-white p-5"><b class="block">Reviewed hotels</b><span class="mt-1 block text-sm text-gray-500">Ratings and comments</span></a>
       <button id="payouts" class="rounded-2xl border bg-white p-5 text-left"><b class="block">Enable payouts</b><span class="mt-1 block text-sm text-gray-500">Activate reviewer requests</span></button>
     </section>
 
@@ -28,6 +29,7 @@
     <form id="credit-settings" class="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border bg-white p-5">
       <div><h2 class="font-bold">Review credit minimum</h2><p class="mt-1 text-sm text-gray-500">The lowest credit fee a reviewer must have before reviewing. Higher-payout hotels still cost more.</p></div>
       <label class="ml-auto block text-sm font-semibold">Minimum credits<input name="minimum_review_credits" type="number" min="0.01" max="10000" step="0.01" required class="mt-1 block w-40 rounded-xl border p-3"></label>
+      <label class="block text-sm font-semibold">Daily review limit<input name="daily_review_limit" type="number" min="1" max="100" step="1" required class="mt-1 block w-32 rounded-xl border p-3"></label>
       <button class="rounded-xl bg-emerald-700 px-4 py-3 text-sm font-semibold text-white">Save minimum</button>
     </form>
     <form id="hotel" class="mt-5 grid gap-3 rounded-2xl border bg-white p-5 md:grid-cols-2">
@@ -118,11 +120,11 @@
       showMessage((await response.json()).status === 'success' ? 'Payouts enabled.' : 'Unable to enable payouts.', response.status !== 200);
     };
     fetch('/api/v1/portal/admin/settings', {headers}).then(r => r.json()).then(p => {
-      if (p.status === 'success') creditSettings.minimum_review_credits.value = Number(p.data.minimum_review_credits).toFixed(2);
+      if (p.status === 'success') { creditSettings.minimum_review_credits.value = Number(p.data.minimum_review_credits).toFixed(2); creditSettings.daily_review_limit.value = p.data.daily_review_limit; }
     });
     creditSettings.onsubmit = async event => {
       event.preventDefault();
-      const response = await fetch('/api/v1/portal/admin/settings', {method: 'PATCH', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify({minimum_review_credits: creditSettings.minimum_review_credits.value})});
+      const response = await fetch('/api/v1/portal/admin/settings', {method: 'PATCH', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify({minimum_review_credits: creditSettings.minimum_review_credits.value, daily_review_limit: creditSettings.daily_review_limit.value})});
       const payload = await response.json();
       showMessage(payload.status === 'success' ? `Minimum review fee is now ${Number(payload.data.minimum_review_credits).toFixed(2)} credits.` : (payload.message || 'Unable to save credit minimum.'), payload.status !== 'success');
     };

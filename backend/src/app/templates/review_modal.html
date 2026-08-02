@@ -122,6 +122,8 @@
         </div>
       </div>
 
+      <label class="mt-5 block text-sm font-semibold text-slate-900">Your review comment<textarea id="reviewComment" required maxlength="3000" rows="4" placeholder="Share the details of your experience…" class="mt-2 w-full rounded-xl border border-gray-200 p-3 font-normal"></textarea></label>
+
       <a id="continueBtn" href="/dashboard" aria-disabled="true" class="pointer-events-none mt-5 block w-full rounded-xl bg-pink-300 px-4 py-3 text-center text-sm font-semibold text-white opacity-80">Continue →</a>
     </div>
 
@@ -162,7 +164,9 @@
         if (continueBtn.getAttribute('aria-disabled') === 'true') return;
         event.preventDefault();
         const scores = Object.fromEntries(Array.from(groups).map(group => [group.dataset.rating, Number(group.dataset.score)]));
-        const response = await fetch('/api/v1/portal/reviews', {method:'POST', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({hotel_id:hotelId, cleanliness:scores.cleanliness, service:scores.service, location_rating:scores.location, value:scores.value})});
+        const comment = document.querySelector('#reviewComment').value.trim();
+        if (!comment) return alert('Please add a review comment.');
+        const response = await fetch('/api/v1/portal/reviews', {method:'POST', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({hotel_id:hotelId, cleanliness:scores.cleanliness, service:scores.service, location_rating:scores.location, value:scores.value, comment})});
         const payload = await response.json();
         if (payload.status === 'success') window.location.assign('/dashboard');
         else alert(payload.message);

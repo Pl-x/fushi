@@ -107,6 +107,14 @@ def _review_credit_cost_units(hotel):
     return max(minimum, hotel.review_reward_cents // 100)
 
 
+def _daily_review_limit():
+    setting = db.session.get(PlatformSetting, 'daily_review_limit')
+    try:
+        return int(setting.value) if setting else 3
+    except (TypeError, ValueError):
+        return 3
+
+
 @portal_bp.get('/me')
 @login_required
 def me(user):
@@ -116,7 +124,9 @@ def me(user):
     available = sum(review.reward_cents for review in reviews if review.status == 'APPROVED')
     in_progress = sum(review.reward_cents for review in reviews if review.status == 'PAYOUT_REQUESTED')
     credit_units = _credit_balance_units(user.id)
-    return jsonify({'status': 'success', 'data': {'user': user.to_dict(), 'profile': profile.to_dict(), 'balance_cents': available, 'paid_cents': paid, 'payout_in_progress_cents': in_progress, 'credit_units': credit_units, 'credit_balance': credit_units / 100, 'reviews': [review.to_dict() for review in reviews], 'payouts_enabled': _payouts_enabled()}})
+    today = datetime.datetime.utcnow().date()
+    today_reviews = sum(1 for review in reviews if review.created_at.date() == today)
+    return jsonify({'status': 'success', 'data': {'user': user.to_dict(), 'profile': profile.to_dict(), 'balance_cents': available, 'paid_cents': paid, 'payout_in_progress_cents': in_progress, 'credit_units': credit_units, 'credit_balance': credit_units / 100, 'daily_review_limit': _daily_review_limit(), 'reviews_today': today_reviews, 'reviews': [review.to_dict() for review in reviews], 'payouts_enabled': _payouts_enabled()}})
 
 
 @portal_bp.patch('/me')
@@ -156,10 +166,18 @@ def create_review(user):
         return jsonify({'status': 'error', 'message': 'Hotel and four ratings from 1 to 5 are required'}), 400
     if HotelReview.query.filter_by(user_id=user.id, hotel_id=hotel.id).first():
         return jsonify({'status': 'error', 'message': 'You have already reviewed this hotel'}), 409
+    today = datetime.datetime.utcnow().date()
+    today_count = HotelReview.query.filter(HotelReview.user_id == user.id, HotelReview.created_at >= today).count()
+    limit = _daily_review_limit()
+    if today_count >= limit:
+        return jsonify({'status': 'error', 'message': f'Daily review limit reached ({limit} reviews). Try again tomorrow.'}), 429
+    comment = (data.get('comment') or '').strip()
+    if not comment or len(comment) > 3000:
+        return jsonify({'status': 'error', 'message': 'A review comment of 1 to 3,000 characters is required'}), 400
     credit_cost = _review_credit_cost_units(hotel)
     if _credit_balance_units(user.id) < credit_cost:
         return jsonify({'status': 'error', 'message': f'Insufficient credits. This review requires {credit_cost / 100:.2f} credits. Deposit credits to continue.', 'required_credit_units': credit_cost}), 402
-    review = HotelReview(user_id=user.id, hotel_id=hotel.id, reward_cents=hotel.review_reward_cents, **{key: data[key] for key in ratings})
+    review = HotelReview(user_id=user.id, hotel_id=hotel.id, reward_cents=hotel.review_reward_cents, comment=comment, **{key: data[key] for key in ratings})
     db.session.add(review)
     db.session.flush()
     db.session.add(CreditLedger(user_id=user.id, amount_units=-credit_cost, entry_type='REVIEW_FEE', review_id=review.id))
@@ -292,7 +310,7 @@ def admin_settings():
         minimum = int(setting.value) if setting else 1054
     except (TypeError, ValueError):
         minimum = 1054
-    return jsonify({'status': 'success', 'data': {'minimum_review_credit_units': minimum, 'minimum_review_credits': minimum / 100}})
+    return jsonify({'status': 'success', 'data': {'minimum_review_credit_units': minimum, 'minimum_review_credits': minimum / 100, 'daily_review_limit': _daily_review_limit()}})
 
 
 @portal_bp.patch('/admin/settings')
@@ -302,13 +320,24 @@ def update_admin_settings():
     try:
         credits = Decimal(str(data.get('minimum_review_credits')))
         units = int(credits * 100)
+        daily_limit = int(data.get('daily_review_limit'))
     except (InvalidOperation, TypeError, ValueError):
         return jsonify({'status': 'error', 'message': 'Minimum review credits must be a number'}), 400
     if not 1 <= units <= 1_000_000:
         return jsonify({'status': 'error', 'message': 'Minimum review credits must be between 0.01 and 10,000.00'}), 400
+    if not 1 <= daily_limit <= 100:
+        return jsonify({'status': 'error', 'message': 'Daily review limit must be between 1 and 100'}), 400
     db.session.merge(PlatformSetting(key='minimum_review_credit_units', value=str(units)))
+    db.session.merge(PlatformSetting(key='daily_review_limit', value=str(daily_limit)))
     db.session.commit()
-    return jsonify({'status': 'success', 'data': {'minimum_review_credit_units': units, 'minimum_review_credits': units / 100}})
+    return jsonify({'status': 'success', 'data': {'minimum_review_credit_units': units, 'minimum_review_credits': units / 100, 'daily_review_limit': daily_limit}})
+
+
+@portal_bp.get('/admin/reviews')
+@admin_required
+def admin_reviews():
+    reviews = HotelReview.query.order_by(HotelReview.created_at.desc()).all()
+    return jsonify({'status': 'success', 'data': [{**review.to_dict(), 'reviewer': review.user.name, 'ratings': {'cleanliness': review.cleanliness, 'service': review.service, 'location': review.location_rating, 'value': review.value}} for review in reviews]})
 
 
 @portal_bp.get('/admin/payout-requests')

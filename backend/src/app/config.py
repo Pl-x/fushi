@@ -225,6 +225,10 @@ def create_app():
     def admin_transactions_page():
         return render_template('admin_transactions.html')
 
+    @app.get('/admin/reviews')
+    def admin_reviews_page():
+        return render_template('admin_reviews.html')
+
     @app.get('/deposit')
     def deposit():
         return render_template('deposit.html')
