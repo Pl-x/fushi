@@ -6,6 +6,7 @@ from .extensions import db, migrate, cors, limiter
 import os
 import logging
 import re
+from urllib.parse import urlparse
 
 logging.basicConfig(level=logging.INFO)
 
@@ -35,13 +36,36 @@ def _allowed_origins():
     return [origin.strip().rstrip('/') for origin in os.getenv('ALLOWED_ORIGINS', '').split(',') if origin.strip()]
 
 
+def _redis_url():
+    """Support the common REDIS_URL name while preferring the limiter-specific name."""
+    return os.getenv('RATELIMIT_STORAGE_URI') or os.getenv('REDIS_URL')
+
+
+def _is_valid_redis_url(value):
+    if _is_placeholder(value):
+        return False
+    try:
+        parsed = urlparse(value)
+        _ = parsed.port  # Validate a supplied port without requiring one.
+        # A leading/trailing dot or two adjacent dots creates an invalid DNS label.
+        return (
+            parsed.scheme in {'redis', 'rediss'}
+            and bool(parsed.hostname)
+            and not parsed.hostname.startswith('.')
+            and not parsed.hostname.endswith('.')
+            and '..' not in parsed.hostname
+        )
+    except ValueError:
+        return False
+
+
 def _validate_production_environment():
     """Fail closed when deployment secrets or externally reachable settings are unsafe."""
     errors = []
     secret = os.getenv('SECRET_KEY')
     paystack_secret = os.getenv('PAYSTACK_SECRET_KEY')
     database_uri = os.getenv('SQLALCHEMY_DATABASE_URI', '')
-    redis_url = os.getenv('RATELIMIT_STORAGE_URI')
+    redis_url = _redis_url()
     origins = _allowed_origins()
 
     if _is_placeholder(secret) or len(secret) < 32:
@@ -52,8 +76,8 @@ def _validate_production_environment():
     uri_valid = database_uri.startswith(('postgresql://', 'postgresql+psycopg2://')) and 'placeholder' not in database_uri.lower()
     if not (components_valid or uri_valid):
         errors.append('PostgreSQL credentials or SQLALCHEMY_DATABASE_URI must be configured')
-    if _is_placeholder(redis_url) or not redis_url.startswith(('redis://', 'rediss://')):
-        errors.append('RATELIMIT_STORAGE_URI must be a redis:// or rediss:// URL')
+    if not _is_valid_redis_url(redis_url):
+        errors.append('RATELIMIT_STORAGE_URI or REDIS_URL must be a valid redis:// or rediss:// URL')
     if not origins or any(not origin.startswith('https://') for origin in origins):
         errors.append('ALLOWED_ORIGINS must contain one or more HTTPS origins')
     if errors:
@@ -99,9 +123,7 @@ def create_app():
         app.config['RATELIMIT_STORAGE_URI'] = 'memory://'
         app.config['RATELIMIT_ENABLED'] = False
     else:
-        app.config['RATELIMIT_STORAGE_URI'] = os.getenv(
-            'RATELIMIT_STORAGE_URI', 'redis://localhost:6379'
-        )
+        app.config['RATELIMIT_STORAGE_URI'] = _redis_url() or 'redis://localhost:6379/0'
 
     if os.getenv('TRUST_PROXY_HEADERS', '').lower() == 'true':
         app.wsgi_app = ProxyFix(app.wsgi_app, x_for=1, x_proto=1, x_host=1)
@@ -139,6 +161,7 @@ def create_app():
         return render_template('checkout.html')
 
     @app.get('/health')
+    @limiter.exempt
     def health():
         return {"status": "healthy"}, 200
 
