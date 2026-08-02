@@ -1,0 +1,128 @@
+<!doctype html>
+<html>
+<head>
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <script src="https://cdn.tailwindcss.com"></script>
+  <title>Let's Review — Admin</title>
+</head>
+<body class="bg-gray-50 font-sans">
+  <main class="mx-auto max-w-5xl p-5">
+    <div class="flex items-center justify-between gap-3">
+      <div>
+        <p class="text-xs font-bold uppercase tracking-widest text-emerald-700">Restricted area</p>
+        <h1 class="text-3xl font-bold">Admin console</h1>
+      </div>
+      <button id="logout" class="rounded-xl border px-4 py-2 text-sm font-semibold">Log out</button>
+    </div>
+    <p class="mt-1 text-sm text-gray-500">Publish, edit, hide, or remove hotel listings and manage reviewer payouts.</p>
+
+    <section class="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
+      <a href="#publish" class="rounded-2xl bg-gray-900 p-5 text-white"><b class="block">Publish hotel</b><span class="mt-1 block text-sm text-gray-300">Add a live listing</span></a>
+      <a href="/admin/payouts" class="rounded-2xl bg-emerald-600 p-5 text-white"><b class="block">Payout requests</b><span class="mt-1 block text-sm text-emerald-100">Approve individually</span></a>
+      <a href="#hotels" class="rounded-2xl border bg-white p-5"><b class="block">Manage hotels</b><span class="mt-1 block text-sm text-gray-500">Modify, hide, or delete</span></a>
+      <button id="payouts" class="rounded-2xl border bg-white p-5 text-left"><b class="block">Enable payouts</b><span class="mt-1 block text-sm text-gray-500">Activate reviewer requests</span></button>
+    </section>
+
+    <p id="message" class="mt-3 text-sm font-medium" aria-live="polite"></p>
+    <form id="hotel" class="mt-5 grid gap-3 rounded-2xl border bg-white p-5 md:grid-cols-2">
+      <div class="flex items-center justify-between md:col-span-2">
+        <h2 id="form-title" class="font-bold">Publish a hotel</h2>
+        <button id="cancel-edit" type="button" class="hidden text-sm font-semibold text-emerald-700">Cancel edit</button>
+      </div>
+      <input name="name" required placeholder="Hotel name" class="rounded-xl border p-3">
+      <input name="location" required placeholder="City, State" class="rounded-xl border p-3">
+      <input name="address" required placeholder="Address" class="rounded-xl border p-3">
+      <input name="category" required placeholder="Luxury, Business…" class="rounded-xl border p-3">
+      <input name="nightly_rate" required placeholder="$200–$300/night" class="rounded-xl border p-3">
+      <input name="image_url" type="url" required placeholder="Direct image URL, not a Brave search link" class="rounded-xl border p-3">
+      <input name="review_reward_kes" type="number" min="0.01" step="0.01" required value="1021" placeholder="Reviewer reward (KES)" class="rounded-xl border p-3">
+      <input name="rating" type="number" min="0" max="5" step="0.1" value="4.5" class="rounded-xl border p-3">
+      <button id="submit-hotel" class="rounded-xl bg-gray-900 p-3 font-semibold text-white">Publish hotel</button>
+    </form>
+
+    <section id="hotels" class="mt-5 grid gap-3 md:grid-cols-2"></section>
+  </main>
+
+  <script>
+    const token = localStorage.getItem('adminToken');
+    const form = document.querySelector('#hotel');
+    const message = document.querySelector('#message');
+    const hotelList = document.querySelector('#hotels');
+    const submitButton = document.querySelector('#submit-hotel');
+    const formTitle = document.querySelector('#form-title');
+    const cancelEdit = document.querySelector('#cancel-edit');
+    const headers = {Authorization: `Bearer ${token}`};
+    let listings = new Map();
+    let editingId = null;
+
+    if (!token) location = '/admin/login';
+    const escapeHtml = value => String(value).replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#39;','"':'&quot;'}[character]));
+    const showMessage = (text, error = false) => {
+      message.textContent = text;
+      message.className = `mt-3 text-sm font-medium ${error ? 'text-red-600' : 'text-emerald-700'}`;
+    };
+    const resetForm = () => {
+      editingId = null;
+      form.reset();
+      form.rating.value = '4.5';
+      form.review_reward_kes.value = '1021';
+      formTitle.textContent = 'Publish a hotel';
+      submitButton.textContent = 'Publish hotel';
+      cancelEdit.classList.add('hidden');
+    };
+    const load = async () => {
+      const response = await fetch('/api/v1/portal/admin/hotels', {headers});
+      const payload = await response.json();
+      if (payload.status !== 'success') return location = '/admin/login';
+      listings = new Map(payload.data.map(hotel => [hotel.id, hotel]));
+      hotelList.innerHTML = payload.data.map(hotel => `<article class="rounded-2xl border bg-white p-4 shadow-sm"><div class="flex items-start justify-between gap-3"><div><h2 class="font-bold">${escapeHtml(hotel.name)}</h2><p class="mt-1 text-sm text-gray-500">${escapeHtml(hotel.location)} · ${escapeHtml(hotel.category)}</p><p class="mt-1 text-sm ${hotel.is_active ? 'text-emerald-700' : 'text-amber-700'}">${hotel.is_active ? 'Live' : 'Hidden'}</p></div><div class="flex gap-2"><button data-action="edit" data-id="${hotel.id}" class="rounded-lg border px-3 py-2 text-sm font-semibold">Modify</button><button data-action="delete" data-id="${hotel.id}" class="rounded-lg border border-red-200 px-3 py-2 text-sm font-semibold text-red-700">Delete</button></div></div></article>`).join('') || '<p class="rounded-xl bg-white p-4 text-sm text-gray-500">No hotels have been published.</p>';
+    };
+
+    hotelList.onclick = async event => {
+      const button = event.target.closest('button[data-action]');
+      if (!button) return;
+      const hotel = listings.get(Number(button.dataset.id));
+      if (!hotel) return;
+      if (button.dataset.action === 'edit') {
+        editingId = hotel.id;
+        for (const field of ['name', 'location', 'address', 'category', 'nightly_rate', 'image_url', 'rating']) form.elements[field].value = hotel[field];
+        form.review_reward_kes.value = (hotel.review_reward_cents / 100).toFixed(2);
+        formTitle.textContent = `Modify ${hotel.name}`;
+        submitButton.textContent = 'Save changes';
+        cancelEdit.classList.remove('hidden');
+        form.scrollIntoView({behavior: 'smooth'});
+        return;
+      }
+      if (!confirm(`Delete ${hotel.name}? This cannot be undone.`)) return;
+      const response = await fetch(`/api/v1/portal/admin/hotels/${hotel.id}`, {method: 'DELETE', headers});
+      if (response.status === 204) {
+        showMessage('Hotel deleted.');
+        load();
+      } else {
+        const payload = await response.json();
+        showMessage(payload.message || 'Unable to delete hotel.', true);
+      }
+    };
+
+    cancelEdit.onclick = resetForm;
+    document.querySelector('#logout').onclick = () => { localStorage.removeItem('adminToken'); location = '/admin/login'; };
+    document.querySelector('#payouts').onclick = async () => {
+      const response = await fetch('/api/v1/portal/admin/payouts', {method: 'PATCH', headers: {...headers, 'Content-Type': 'application/json'}, body: '{"enabled":true}'});
+      showMessage((await response.json()).status === 'success' ? 'Payouts enabled.' : 'Unable to enable payouts.', response.status !== 200);
+    };
+    form.onsubmit = async event => {
+      event.preventDefault();
+      const response = await fetch(editingId ? `/api/v1/portal/admin/hotels/${editingId}` : '/api/v1/portal/admin/hotels', {
+        method: editingId ? 'PATCH' : 'POST', headers: {...headers, 'Content-Type': 'application/json'}, body: JSON.stringify(Object.fromEntries(new FormData(form)))
+      });
+      const payload = await response.json();
+      if (payload.status === 'success') {
+        showMessage(editingId ? 'Hotel updated.' : 'Hotel published.');
+        resetForm();
+        load();
+      } else showMessage(payload.message || 'Unable to save hotel.', true);
+    };
+    load();
+  </script>
+</body>
+</html>

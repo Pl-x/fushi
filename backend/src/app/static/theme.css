@@ -1,0 +1,94 @@
+:root {
+  color-scheme: light;
+}
+
+body.theme-dark {
+  color-scheme: dark;
+  background-color: #0b1210 !important;
+  color: #edf5ef !important;
+}
+
+body.theme-dark .bg-white,
+body.theme-dark .bg-gray-50,
+body.theme-dark .bg-gray-100,
+body.theme-dark .bg-slate-50,
+body.theme-dark .bg-slate-100,
+body.theme-dark .bg-blue-50,
+body.theme-dark .bg-emerald-50,
+body.theme-dark .bg-pink-50,
+body.theme-dark .bg-\[\#fafafa\] {
+  background-color: #111c18 !important;
+}
+
+body.theme-dark .bg-gray-900,
+body.theme-dark .bg-black {
+  background-color: #060a08 !important;
+}
+
+body.theme-dark .text-gray-900,
+body.theme-dark .text-gray-800,
+body.theme-dark .text-slate-900,
+body.theme-dark .text-slate-800,
+body.theme-dark .text-blue-900,
+body.theme-dark .text-black {
+  color: #f1f7f3 !important;
+}
+
+body.theme-dark .text-gray-700,
+body.theme-dark .text-gray-600,
+body.theme-dark .text-gray-500,
+body.theme-dark .text-slate-700,
+body.theme-dark .text-slate-600,
+body.theme-dark .text-slate-500,
+body.theme-dark .text-blue-700,
+body.theme-dark .text-emerald-600,
+body.theme-dark .text-emerald-700,
+body.theme-dark .text-pink-700 {
+  color: #b7c8bc !important;
+}
+
+body.theme-dark .bg-blue-50,
+body.theme-dark .bg-emerald-50,
+body.theme-dark .bg-pink-50 {
+  color: #d8f7e1 !important;
+}
+
+body.theme-dark .border,
+body.theme-dark .border-gray-100,
+body.theme-dark .border-gray-200,
+body.theme-dark .border-gray-300 {
+  border-color: #30443a !important;
+}
+
+body.theme-dark input,
+body.theme-dark textarea,
+body.theme-dark select {
+  color: #eef6f0 !important;
+  background-color: #17241e !important;
+  border-color: #40564a !important;
+}
+
+.theme-toggle {
+  position: fixed;
+  top: 1rem;
+  right: 1rem;
+  z-index: 60;
+  display: inline-flex;
+  min-width: 2.75rem;
+  min-height: 2.75rem;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #cbd5d0;
+  border-radius: 9999px;
+  color: #102218;
+  background: #fff;
+  box-shadow: 0 2px 8px rgb(0 0 0 / 12%);
+}
+
+body.theme-dark .theme-toggle {
+  color: #d9f5e1;
+  background: #17241e;
+  border-color: #40564a;
+}
+
+.theme-toggle:hover { transform: scale(1.04); }

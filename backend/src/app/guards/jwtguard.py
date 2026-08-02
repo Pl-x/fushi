@@ -96,3 +96,28 @@ def optional_jwt(f):
         return f(*args, **kwargs)
     
     return decorated_function
+
+
+def admin_required(f):
+    """Require an active, database-confirmed administrator for sensitive routes."""
+    @wraps(f)
+    def decorated_function(*args, **kwargs):
+        auth_header = request.headers.get('Authorization', '')
+        parts = auth_header.split(' ', 1)
+        if len(parts) != 2 or parts[0].lower() != 'bearer' or not parts[1].strip():
+            return jsonify({'status': 'error', 'message': 'Authorization header is required'}), 401
+        try:
+            payload = jwt.decode(parts[1], SECRET_KEY, algorithms=['HS256'])
+        except jwt.ExpiredSignatureError:
+            return jsonify({'status': 'error', 'message': 'Token has expired'}), 401
+        except jwt.InvalidTokenError:
+            return jsonify({'status': 'error', 'message': 'Invalid token'}), 401
+
+        user = User.query.get(payload.get('user_id'))
+        if not user or not user.is_active:
+            return jsonify({'status': 'error', 'message': 'Administrator access required'}), 403
+        if not user.is_admin:
+            return jsonify({'status': 'error', 'message': 'Administrator access required'}), 403
+        request.current_user = user
+        return f(*args, **kwargs)
+    return decorated_function

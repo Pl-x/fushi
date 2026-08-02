@@ -8,14 +8,15 @@ class TestHealthEndpoints:
     """Test health check endpoints"""
     
     def test_root_endpoint(self, client):
-        """Test root endpoint returns API info"""
+        """Test root endpoint serves the public landing page."""
         response = client.get('/')
         
         assert response.status_code == 200
-        data = response.get_json()
-        assert data['status'] == 'success'
-        assert 'message' in data
-        assert 'version' in data
+        assert b"Let's Review" in response.data
+        assert b'/static/theme.css' in response.data
+        assert b'/static/theme.js' in response.data
+        assert b'/static/css/app.css' in response.data
+        assert b'cdn.tailwindcss.com' not in response.data
     
     def test_health_endpoint(self, client):
         """Test health check endpoint"""

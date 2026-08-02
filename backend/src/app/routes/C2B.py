@@ -7,6 +7,7 @@ from flask import request, jsonify, Blueprint
 from ..paystack_client import Paystack, InvalidDataError, UnwantedDataError
 from ..extensions import db
 from ..models import Payment
+from ..guards.jwtguard import admin_required, jwt_required
 import datetime
 import uuid
 
@@ -20,6 +21,7 @@ paystack = Paystack(secret_key=PAYSTACK_SECRET_KEY) if PAYSTACK_SECRET_KEY else 
 
 
 @c2b_bp.route("/initialize", methods=['POST'])
+@jwt_required
 def initialize_payment():
     """
     Initialize a payment collection from customer (supports M-Pesa for Kenya)
@@ -149,6 +151,7 @@ def initialize_payment():
 
 
 @c2b_bp.route("/charge", methods=['POST'])
+@jwt_required
 def charge_authorization():
     """
     Charge a customer using a previously saved authorization
@@ -233,6 +236,7 @@ def charge_authorization():
 
 
 @c2b_bp.route("/verify/<reference>", methods=['GET'])
+@jwt_required
 def verify_payment(reference):
     """
     Verify a C2B payment
@@ -286,6 +290,7 @@ def verify_payment(reference):
 
 
 @c2b_bp.route("/payments", methods=['GET'])
+@admin_required
 def list_payments():
     """
     List all C2B payments with optional filters
@@ -326,6 +331,7 @@ def list_payments():
 
 
 @c2b_bp.route("/payment/<int:payment_id>", methods=['GET'])
+@admin_required
 def get_payment(payment_id):
     """
     Get a specific payment by ID
@@ -350,6 +356,7 @@ def get_payment(payment_id):
 
 
 @c2b_bp.route("/mpesa/initialize", methods=['POST'])
+@jwt_required
 def initialize_mpesa():
     """
     Initialize M-Pesa payment (Kenya-specific)

@@ -82,9 +82,9 @@ CREATE USER payment_user WITH PASSWORD 'strong-password';
 GRANT ALL PRIVILEGES ON DATABASE payment_gateway TO payment_user;
 \q
 
-# Run migrations
+# Run migrations (never use db.create_all in production)
 source .venv/bin/activate
-python run.py  # Creates tables on first run
+AUTO_CREATE_SCHEMA=false flask --app run:app db upgrade
 ```
 
 #### Step 5: Configure Gunicorn
@@ -246,13 +246,23 @@ services:
   - type: web
     name: payment-gateway
     env: python
-    buildCommand: pip install -r requirements.txt
-    startCommand: gunicorn -w 4 -b 0.0.0.0:$PORT "src.app.main:app"
+    buildCommand: npm ci && npm run build:css && uv sync --frozen
+    startCommand: uv run gunicorn -w 2 --timeout 120 -b 0.0.0.0:$PORT run:app
     envVars:
       - key: SECRET_KEY
         generateValue: true
       - key: FLASK_DEBUG
         value: False
+      - key: APP_ENV
+        value: production
+      - key: AUTO_CREATE_SCHEMA
+        value: "false"
+      - key: TRUST_PROXY_HEADERS
+        value: "true"
+      - key: ALLOWED_ORIGINS
+        sync: false
+      - key: RATELIMIT_STORAGE_URI
+        sync: false
       - key: PAYSTACK_SECRET_KEY
         sync: false
       - key: POSTGRES_HOST

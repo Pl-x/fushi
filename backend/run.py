@@ -7,10 +7,12 @@ from src.app.main import app
 from src.app.extensions import db
 
 if __name__ == '__main__':
-    # Create database tables if they don't exist
-    with app.app_context():
-        db.create_all()
-        print("Database tables created successfully!")
+    # Schema changes belong to Alembic migrations.  Keep this development
+    # convenience behind the same explicit opt-in as the application factory.
+    if app.config['AUTO_CREATE_SCHEMA']:
+        with app.app_context():
+            db.create_all()
+            print("Database schema ensured (development only).")
     
     # Get port from environment or default to 5000
     port = int(os.getenv('PORT', 5000))

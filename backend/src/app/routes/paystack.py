@@ -6,7 +6,8 @@ import logging
 from flask import request, jsonify, Blueprint
 from ..paystack_client import Paystack, InvalidDataError, UnwantedDataError
 from ..extensions import db
-from ..models import Payment, Transfer, Refund
+from ..models import HotelReview, Payment, PayoutRequest, Transfer, Refund
+from ..guards.jwtguard import admin_required, jwt_required
 import datetime
 
 logger = logging.getLogger(__name__)
@@ -36,6 +37,7 @@ def verify_paystack_signature(payload, signature):
 
 
 @paystack_bp.route("/initialize", methods=['POST'])
+@jwt_required
 def initialize_transaction():
     """
     Initialize a Paystack transaction
@@ -125,6 +127,7 @@ def initialize_transaction():
 
 
 @paystack_bp.route("/verify/<reference>", methods=['GET'])
+@jwt_required
 def verify_transaction(reference):
     """
     Verify a Paystack transaction
@@ -225,6 +228,12 @@ def webhook():
                 transfer.status = 'SUCCESS'
                 transfer.transfer_code = transfer_data.get('transfer_code')
                 transfer.completed_at = datetime.datetime.utcnow()
+                payout = PayoutRequest.query.filter_by(transfer_id=transfer.id).first()
+                if payout:
+                    payout.status = 'PAID'
+                    HotelReview.query.filter_by(
+                        user_id=payout.user_id, status='PAYOUT_REQUESTED'
+                    ).update({'status': 'PAID'})
                 db.session.commit()
                 
         elif event == 'transfer.failed':
@@ -235,6 +244,23 @@ def webhook():
             transfer = Transfer.query.filter_by(reference=reference).first()
             if transfer:
                 transfer.status = 'FAILED'
+                payout = PayoutRequest.query.filter_by(transfer_id=transfer.id).first()
+                if payout:
+                    payout.status = 'FAILED'
+                db.session.commit()
+
+        elif event == 'transfer.reversed':
+            transfer_data = data['data']
+            reference = transfer_data.get('reference')
+            transfer = Transfer.query.filter_by(reference=reference).first()
+            if transfer:
+                transfer.status = 'REVERSED'
+                payout = PayoutRequest.query.filter_by(transfer_id=transfer.id).first()
+                if payout:
+                    payout.status = 'REVERSED'
+                    HotelReview.query.filter_by(
+                        user_id=payout.user_id, status='PAID'
+                    ).update({'status': 'APPROVED'})
                 db.session.commit()
         
         elif event == 'refund.processed':
@@ -259,6 +285,7 @@ def webhook():
 
 
 @paystack_bp.route("/transactions", methods=['GET'])
+@admin_required
 def list_transactions():
     """
     List all transactions with optional filters
@@ -295,6 +322,7 @@ def list_transactions():
 
 
 @paystack_bp.route("/transaction/<int:transaction_id>", methods=['GET'])
+@admin_required
 def get_transaction(transaction_id):
     """
     Get a specific transaction by ID

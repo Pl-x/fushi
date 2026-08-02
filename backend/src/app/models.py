@@ -281,6 +281,9 @@ class User(db.Model):
     name = db.Column(db.String(100), nullable=False)
     phone_number = db.Column(db.String(20), nullable=True)
     is_active = db.Column(db.Boolean, default=True)
+    # Administrative access is granted explicitly in the database; ordinary
+    # users can never obtain it through the public signup route.
+    is_admin = db.Column(db.Boolean, default=False, nullable=False)
     created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
     last_login = db.Column(db.DateTime, nullable=True)
 
@@ -295,5 +298,83 @@ class User(db.Model):
             'name': self.name,
             'phone_number': self.phone_number,
             'is_active': self.is_active,
+            'is_admin': self.is_admin,
             'created_at': self.created_at.isoformat()
+        }
+
+
+class ReviewerProfile(db.Model):
+    __tablename__ = 'reviewer_profiles'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), unique=True, nullable=False)
+    username = db.Column(db.String(60), unique=True, nullable=False)
+    location = db.Column(db.String(100), default='Nairobi, Kenya')
+    user = db.relationship('User', backref=db.backref('reviewer_profile', uselist=False))
+
+    def to_dict(self):
+        return {'username': self.username, 'location': self.location}
+
+
+class Hotel(db.Model):
+    __tablename__ = 'hotels'
+    id = db.Column(db.Integer, primary_key=True)
+    name = db.Column(db.String(150), nullable=False)
+    location = db.Column(db.String(150), nullable=False)
+    address = db.Column(db.String(255), nullable=False)
+    category = db.Column(db.String(50), nullable=False)
+    rating = db.Column(db.Float, default=0)
+    nightly_rate = db.Column(db.String(80), nullable=False)
+    review_reward_cents = db.Column(db.Integer, default=102100, nullable=False)
+    # Image search-result links can be long, and hosted image/CDN URLs do not
+    # have a practical 500-character limit. Keep the complete source URL.
+    image_url = db.Column(db.Text, nullable=False)
+    is_active = db.Column(db.Boolean, default=True, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+
+    def to_dict(self):
+        return {key: getattr(self, key) for key in ('id', 'name', 'location', 'address', 'category', 'rating', 'nightly_rate', 'review_reward_cents', 'image_url', 'is_active')}
+
+
+class HotelReview(db.Model):
+    __tablename__ = 'hotel_reviews'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    hotel_id = db.Column(db.Integer, db.ForeignKey('hotels.id'), nullable=False)
+    cleanliness = db.Column(db.Integer, nullable=False)
+    service = db.Column(db.Integer, nullable=False)
+    location_rating = db.Column(db.Integer, nullable=False)
+    value = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(20), default='APPROVED', nullable=False)
+    # Amounts use the currency's minor unit. KES 1,021.00 is 102100 cents.
+    reward_cents = db.Column(db.Integer, default=102100, nullable=False)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    hotel = db.relationship('Hotel')
+    user = db.relationship('User')
+
+    def to_dict(self):
+        return {'id': self.id, 'hotel': self.hotel.name, 'hotel_id': self.hotel_id, 'status': self.status, 'reward_cents': self.reward_cents, 'created_at': self.created_at.isoformat()}
+
+
+class PlatformSetting(db.Model):
+    __tablename__ = 'platform_settings'
+    key = db.Column(db.String(80), primary_key=True)
+    value = db.Column(db.String(255), nullable=False)
+
+
+class PayoutRequest(db.Model):
+    __tablename__ = 'payout_requests'
+    id = db.Column(db.Integer, primary_key=True)
+    user_id = db.Column(db.Integer, db.ForeignKey('users.id'), nullable=False)
+    amount_cents = db.Column(db.Integer, nullable=False)
+    status = db.Column(db.String(20), default='PENDING', nullable=False)
+    transfer_id = db.Column(db.Integer, db.ForeignKey('transfers.id'), unique=True, nullable=True)
+    created_at = db.Column(db.DateTime, default=datetime.datetime.utcnow)
+    user = db.relationship('User')
+    transfer = db.relationship('Transfer')
+
+    def to_dict(self):
+        return {
+            'id': self.id, 'amount_cents': self.amount_cents, 'status': self.status,
+            'transfer_reference': self.transfer.reference if self.transfer else None,
+            'created_at': self.created_at.isoformat(),
         }

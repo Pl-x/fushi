@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Pink - Rate Your Stay</title>
+    <title>Hotels - Rate Your Stay</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
       tailwind.config = {
@@ -35,7 +35,7 @@
           <h2 class="text-lg font-semibold text-slate-900">The Grand Plaza Manhattan</h2>
           <p class="text-sm text-gray-500">New York, NY</p>
         </div>
-        <span class="rounded-full bg-pink-50 px-3 py-1 text-xs font-bold text-pink-700">+$14.00</span>
+        <span class="rounded-full bg-pink-50 px-3 py-1 text-xs font-bold text-pink-700">+KES 1,021.00</span>
       </div>
 
       <div class="mb-5">
@@ -128,12 +128,16 @@
       lucide.createIcons();
       const groups = document.querySelectorAll('[data-rating]');
       const continueBtn = document.getElementById('continueBtn');
+      const token = localStorage.getItem('pinkToken');
+      const hotelId = Number(new URLSearchParams(location.search).get('hotel_id'));
+      if (!token || !hotelId) window.location.assign('/hotels');
 
       groups.forEach((group) => {
         const stars = group.querySelectorAll('.rating-star');
         stars.forEach((star) => {
           star.addEventListener('click', () => {
             const value = Number(star.dataset.value);
+            group.dataset.score = value;
             stars.forEach((item, idx) => {
               const active = idx < value;
               item.classList.toggle('text-yellow-400', active);
@@ -151,6 +155,15 @@
             continueBtn.setAttribute('aria-disabled', String(!allSelected));
           });
         });
+      });
+      continueBtn.addEventListener('click', async (event) => {
+        if (continueBtn.getAttribute('aria-disabled') === 'true') return;
+        event.preventDefault();
+        const scores = Object.fromEntries(Array.from(groups).map(group => [group.dataset.rating, Number(group.dataset.score)]));
+        const response = await fetch('/api/v1/portal/reviews', {method:'POST', headers:{Authorization:`Bearer ${token}`,'Content-Type':'application/json'}, body:JSON.stringify({hotel_id:hotelId, cleanliness:scores.cleanliness, service:scores.service, location_rating:scores.location, value:scores.value})});
+        const payload = await response.json();
+        if (payload.status === 'success') window.location.assign('/dashboard');
+        else alert(payload.message);
       });
     </script>
   </body>

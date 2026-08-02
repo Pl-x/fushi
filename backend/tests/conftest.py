@@ -36,6 +36,33 @@ def client(app):
     return app.test_client()
 
 
+@pytest.fixture(autouse=True)
+def authorize_legacy_financial_flow_tests(request, client, db_session):
+    """Give legacy payment-flow tests an explicit database admin token.
+
+    Production code never bypasses authorization. Dedicated guard tests keep
+    exercising the unauthenticated and reviewer-denied paths.
+    """
+    module = request.module.__name__.rsplit('.', 1)[-1]
+    if module not in {'test_b2c', 'test_c2b', 'test_integration'}:
+        yield
+        return
+
+    from src.app.routes.AAA import generate_jwt_token, hash_password
+
+    admin = User(
+        email='financial-test-admin@example.com',
+        password_hash=hash_password('financial-test-password'),
+        name='Financial Test Admin',
+        is_admin=True,
+    )
+    db_session.session.add(admin)
+    db_session.session.commit()
+    token = generate_jwt_token(admin.id, admin.email)
+    client.environ_base['HTTP_AUTHORIZATION'] = f'Bearer {token}'
+    yield
+
+
 @pytest.fixture(scope='function')
 def db_session(app):
     """Create a new database session for each test"""

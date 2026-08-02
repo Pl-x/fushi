@@ -47,6 +47,12 @@ class _TransferResource:
     def verify(self, reference: str) -> dict[str, Any]:
         return self.client._request("GET", f"/transfer/verify/{quote(reference, safe='')}")
 
+    def finalize(self, transfer_code: str, otp: str) -> dict[str, Any]:
+        return self.client._request(
+            "POST", "/transfer/finalize_transfer",
+            {"transfer_code": transfer_code, "otp": otp},
+        )
+
 
 class Paystack:
     """Minimal Paystack client with the route layer's existing method names."""

@@ -14,6 +14,7 @@ wheels/
 
 # Virtual environments
 .venv
+node_modules/
 venv/
 ENV/
 env/
@@ -49,6 +50,7 @@ logs/
 /tests/
 .pytest_cache/
 .coverage
+.coverage.*
 htmlcov/
 
 # Documentation (keep the project and API references)
@@ -60,8 +62,10 @@ htmlcov/
 /.*/
 !/.gitignore
 
-# Migrations
-migrations/
+# Alembic bytecode is local-only; migration source files must be committed.
+migrations/__pycache__/
+migrations/versions/__pycache__/
+
 
 # Redis
 dump.rdb

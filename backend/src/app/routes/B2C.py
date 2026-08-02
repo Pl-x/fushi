@@ -7,6 +7,7 @@ from flask import request, jsonify, Blueprint
 from ..paystack_client import Paystack, InvalidDataError, UnwantedDataError
 from ..extensions import db
 from ..models import Transfer, Refund, Payment
+from ..guards.jwtguard import admin_required
 import datetime
 import uuid
 
@@ -20,6 +21,7 @@ paystack = Paystack(secret_key=PAYSTACK_SECRET_KEY) if PAYSTACK_SECRET_KEY else 
 
 
 @b2c_bp.route("/transfer/initiate", methods=['POST'])
+@admin_required
 def initiate_transfer():
     """
     Initiate a transfer/payout to a recipient
@@ -154,6 +156,7 @@ def initiate_transfer():
 
 
 @b2c_bp.route("/transfer/verify/<reference>", methods=['GET'])
+@admin_required
 def verify_transfer(reference):
     """
     Verify a transfer status
@@ -202,6 +205,7 @@ def verify_transfer(reference):
 
 
 @b2c_bp.route("/refund", methods=['POST'])
+@admin_required
 def process_refund():
     """
     Process a refund for a transaction
@@ -332,6 +336,7 @@ def process_refund():
 
 
 @b2c_bp.route("/transfers", methods=['GET'])
+@admin_required
 def list_transfers():
     """
     List all transfers with optional filters
@@ -368,6 +373,7 @@ def list_transfers():
 
 
 @b2c_bp.route("/refunds", methods=['GET'])
+@admin_required
 def list_refunds():
     """
     List all refunds with optional filters
